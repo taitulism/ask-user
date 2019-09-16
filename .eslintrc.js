@@ -108,16 +108,16 @@ module.exports = {
 		"max-statements": ["warn", { "max": 20 }],
 		"max-statements-per-line": "error",
 //		"multiline-comment-style": "off",
-		"multiline-ternary": "error",
+		"multiline-ternary": ["error", "always-multiline"],
 		"new-cap": ["error", {
 			"capIsNew": false,
 		}],
 		"new-parens": "error",
-		"newline-after-var": [
-			"error",
-			"always"
-		],
-		"newline-before-return": "error",
+//		"newline-after-var": [
+//			"off",
+//			"always"
+//		],
+//		"newline-before-return": "off",
 		"newline-per-chained-call": ["error", {
 			"ignoreChainWithDepth": 3
 		}],
@@ -250,7 +250,7 @@ module.exports = {
 		"padding-line-between-statements": "error",
 		"prefer-arrow-callback": "error",
 		"prefer-const": "error",
-		"prefer-destructuring": "error",
+//		"prefer-destructuring": "off",
 //		"prefer-named-capture-group": "off",
 		"prefer-numeric-literals": "error",
 		"prefer-object-spread": "error",
@@ -262,7 +262,8 @@ module.exports = {
 		"quote-props": ["error", "as-needed"],
 		"quotes": [
 			"error",
-			"single"
+			"single",
+			{ "avoidEscape": true }
 		],
 		"radix": "error",
 		"require-atomic-updates": "error",
