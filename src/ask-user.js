@@ -1,7 +1,9 @@
 const {createInterface} = require('readline');
+const normalizeTralingSpace = require('./normalize-traling-space');
+const DEFAULT_QUESTION = 'Press "ENTER" to continue... ';
 
-function askUser (question) {
-	question = question ? addTralingSpace(question) : '';
+function askUser (question = DEFAULT_QUESTION) {
+	question = normalizeTralingSpace(question);
 
 	const readline = createInterface({
 		input: process.stdin,
@@ -14,16 +16,6 @@ function askUser (question) {
 			return resolve(answer);
 		});
 	});
-};
-
-function addTralingSpace (q) {
-	const lastChar = q[q.length - 1];
-
-	if (lastChar !== ' ' && lastChar !== '\n') {
-		q += ' ';
-	}
-
-	return q;
 }
 
 module.exports = askUser;

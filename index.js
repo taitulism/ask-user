@@ -1,3 +1,3 @@
-const TPL = require('./src/ask-user');
+const askUser = require('./src/ask-user');
 
-module.exports = TPL;
+module.exports = askUser;
