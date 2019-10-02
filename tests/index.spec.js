@@ -4,8 +4,12 @@ const {EOL} = require('os');
 const {PassThrough: Stream} = require('stream');
 
 const chai = require('chai');
+const sinon = require('sinon');
+const sinonChai = require('sinon-chai');
 const chaiAsPromised = require('chai-as-promised');
 const expect = chai.expect;
+
+chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
 const askUser = require('../');
@@ -13,30 +17,10 @@ const askUser = require('../');
 const THE_ULTIMATE_QUESTION = 'What is the answer to life, the universe and everything?';
 const question = `    ${THE_ULTIMATE_QUESTION}\n    > `;
 
-function simulateTyping (text) {
-	const len = text.length;
-	let i = 0;
-
-	while (i <= len) {
-		const char = text[i];
-
-		if (char) {
-			setTimeout(() => {
-				process.stdin.emit('data', char);
-			}, ++i * 1000);
-		}
-		else {
-			setTimeout(() => {
-				process.stdin.emit('data', EOL);
-			}, ++i * 1000);
-		}
-	}
-}
-
-function setAnswerTimeout (stream, text = 'OK') {
+function setAnswerTimeout (stream, text = 'OK', ms = 0) {
 	setTimeout(() => {
 		stream.emit('data', text + EOL);
-	}, 0);
+	}, ms);
 }
 
 describe('askUser\n  -------', () => {
@@ -113,6 +97,95 @@ describe('askUser\n  -------', () => {
 
 			describe('.stdout', () => {
 				it('uses a given stream as `stdout` (default is `process.stdout`)', () => {});
+			});
+		});
+
+		describe('[2] Function - Answer Validation', () => {
+			it('gets called on answer', () => {
+				const stdin = new Stream();
+				const stdout = new Stream();
+
+				setAnswerTimeout(stdin);
+				const spy = sinon.spy();
+
+				return askUser(question, {stdin, stdout}, (answer, count) => {
+					spy(answer, count);
+					return true;
+				}).then(() => {
+					stdin.destroy();
+					stdout.destroy();
+					return expect(spy).to.be.calledOnce;
+				});
+			});
+
+			describe('Arguments:', () => {
+				describe('[0] String - User\'s Answer', () => {
+					it('gets called with the user\'s answer', () => {
+						const stdin = new Stream();
+						const stdout = new Stream();
+						const answer = '42';
+
+						setAnswerTimeout(stdin, answer);
+						const spy = sinon.spy();
+
+						return askUser(question, {stdin, stdout}, (answer, count) => {
+							spy(answer, count);
+							return true;
+						}).then((answer) => {
+							stdin.destroy();
+							stdout.destroy();
+							return expect(spy).to.be.calledWith(answer);
+						});
+					});
+				});
+
+				describe('[1] Number - Try Number', () => {
+					it('first gets called with the value of 1', () => {
+						const stdin = new Stream();
+						const stdout = new Stream();
+						const answer = '42';
+
+						setAnswerTimeout(stdin, answer);
+						const spy = sinon.spy();
+
+						return askUser(question, {stdin, stdout}, (answer, count) => {
+							spy(answer, count);
+							return true;
+						}).then((answer) => {
+							stdin.destroy();
+							stdout.destroy();
+							return expect(spy).to.be.calledWith(answer, 1);
+						});
+					});
+
+					it('increments on each try', () => {
+						const stdin = new Stream();
+						const stdout = new Stream();
+						const wrongAnswer1 = '41';
+						const wrongAnswer2 = '43';
+						const correctAnswer = '42';
+
+						setAnswerTimeout(stdin, wrongAnswer1, 10);
+						setAnswerTimeout(stdin, wrongAnswer2, 20);
+						setAnswerTimeout(stdin, correctAnswer, 30);
+						const spy = sinon.spy();
+
+						return askUser(question, {stdin, stdout}, (answer, tryCount) => {
+							spy(answer, tryCount);
+							if (answer === correctAnswer) return true;
+							return false;
+						}).then(() => {
+							stdin.destroy();
+							stdout.destroy();
+							const calls = spy.getCalls();
+
+							expect(spy.callCount).to.equal(3);
+							expect(calls[0].args).to.deep.equal(['41', 1]);
+							expect(calls[1].args).to.deep.equal(['43', 2]);
+							expect(calls[2].args).to.deep.equal(['42', 3]);
+						});
+					});
+				});
 			});
 		});
 	});

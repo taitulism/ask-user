@@ -18,9 +18,11 @@
       "postversion": "git push && git push --tags"
    },
    "devDependencies": {
+      "chai": "*",
+      "chai-as-promised": "*",
       "eslint": "*",
       "mocha": "*",
-      "chai": "*",
-      "chai-as-promised": "*"
+      "sinon": "^7.5.0",
+      "sinon-chai": "^3.3.0"
    }
 }
