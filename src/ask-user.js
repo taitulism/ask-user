@@ -1,13 +1,10 @@
 /* eslint-disable no-await-in-loop */
 
 const {createInterface} = require('readline');
-const normalizeTralingSpace = require('./normalize-traling-space');
-const DEFAULT_QUESTION = 'Press "ENTER" to continue... ';
+const resolveArgs = require('./resolve-args');
 
-async function askUser (question, opts = {}, validate) {
-	question = normalizeTralingSpace(question);
-
-	validate = validate || opts.validate || (() => (true));
+async function askUser (...args) {
+	const [question, opts, limit, validate] = resolveArgs(...args);
 
 	const readline = createInterface({
 		input: opts.stdin || process.stdin,
@@ -16,7 +13,7 @@ async function askUser (question, opts = {}, validate) {
 
 	let answer;
 	let triesCounter = 0;
-	let hasEnded = false;
+	let ended = false;
 	let isValid = false;
 
 	do {
@@ -24,13 +21,15 @@ async function askUser (question, opts = {}, validate) {
 		isValid = validate(answer, ++triesCounter);
 
 		if (isValid) {
-			hasEnded = true;
+			ended = true;
 
-			if (isValid !== true) {
-				answer = isValid;
-			}
+			if (isValid !== true) answer = isValid;
 		}
-	} while (hasEnded === false);
+		else if (limit && limit <= triesCounter) {
+			answer = null;
+			ended = true;
+		}
+	} while (!ended);
 
 	readline.close();
 	return answer;
@@ -38,9 +37,7 @@ async function askUser (question, opts = {}, validate) {
 
 function asyncPrompt (question, readline) {
 	return new Promise((resolve) => {
-		readline.question(question, (answer) => {
-			return resolve(answer);
-		});
+		readline.question(question, answer => resolve(answer));
 	});
 }
 

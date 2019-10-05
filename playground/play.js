@@ -26,15 +26,16 @@ async function ask (question) {
 (async () => {
 	try {
 
-		const answer = await askUser('what is your fav color?', 3, function (ans) {
+		const answer = await askUser('what is your fav color?', 10, function (ans) {
 			if (ans.includes('Y')) return true;
+			console.log('nope');
 			return false;
 		});
 
 		console.log('the answer is:', answer);
 
 		const answer2 = await askUser('really?');
-		console.log('answer2 is:', answer2);
+		console.log('\nanswer2 is:', answer2);
 
 
 		setTimeout(() => {

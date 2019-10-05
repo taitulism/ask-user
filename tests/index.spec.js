@@ -1,4 +1,4 @@
-/* eslint-disable object-property-newline */
+/* eslint-disable no-empty-function, object-property-newline */
 
 const {EOL} = require('os');
 const {PassThrough: Stream} = require('stream');
@@ -91,12 +91,42 @@ describe('askUser\n  -------', () => {
 		});
 
 		describe('[1] Object - Options', () => {
-			describe('.stdin', () => {
+			describe('opts.stdin', () => {
 				it('uses a given stream as `stdin` (default is `process.stdin`)', () => {});
 			});
 
-			describe('.stdout', () => {
+			describe('opts.stdout', () => {
 				it('uses a given stream as `stdout` (default is `process.stdout`)', () => {});
+			});
+
+			describe('opts.max', () => {
+				it('returns `null` if max tries exceeded', () => {
+					const stdin = new Stream();
+					const stdout = new Stream();
+					const wrongAnswer1 = '40';
+					const wrongAnswer2 = '41';
+					const wrongAnswer3 = '43';
+					const correctAnswer = '42';
+					const limit = 3;
+
+					setAnswerTimeout(stdin, wrongAnswer1, 10);
+					setAnswerTimeout(stdin, wrongAnswer2, 20);
+					setAnswerTimeout(stdin, wrongAnswer3, 30);
+					setAnswerTimeout(stdin, correctAnswer, 40);
+					const spy = sinon.spy();
+
+					return askUser(question, {limit, stdin, stdout}, (answer, tryCount) => {
+						spy(answer, tryCount);
+						if (answer === correctAnswer) return true;
+						return false;
+					}).then((answer) => {
+						stdin.destroy();
+						stdout.destroy();
+
+						expect(spy.callCount).to.equal(3);
+						expect(answer).to.be.null;
+					});
+				});
 			});
 		});
 
