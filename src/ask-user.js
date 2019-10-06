@@ -20,10 +20,13 @@ async function askUser (...args) {
 		answer = await asyncPrompt(question, readline);
 		isValid = validate(answer, ++triesCounter);
 
-		if (isValid) {
-			ended = true;
+		if (isValid instanceof Promise) {
+			isValid = await isValid;
+		}
 
+		if (isValid) {
 			if (isValid !== true) answer = isValid;
+			ended = true;
 		}
 		else if (limit && limit <= triesCounter) {
 			answer = null;

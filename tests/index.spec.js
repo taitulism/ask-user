@@ -91,16 +91,16 @@ describe('askUser\n  -------', () => {
 		});
 
 		describe('[1] Object - Options', () => {
-			describe('opts.stdin', () => {
+			describe('stdin', () => {
 				it('uses a given stream as `stdin` (default is `process.stdin`)', () => {});
 			});
 
-			describe('opts.stdout', () => {
+			describe('stdout', () => {
 				it('uses a given stream as `stdout` (default is `process.stdout`)', () => {});
 			});
 
-			describe('opts.max', () => {
-				it('returns `null` if max tries exceeded', () => {
+			describe('limit', () => {
+				it('makes `askUser` promise resolve with `null` if max tries exceeded', () => {
 					const stdin = new Stream();
 					const stdout = new Stream();
 					const wrongAnswer1 = '40';
@@ -145,6 +145,35 @@ describe('askUser\n  -------', () => {
 					stdin.destroy();
 					stdout.destroy();
 					return expect(spy).to.be.calledOnce;
+				});
+			});
+
+			it('handles async validation (promise)', () => {
+				const stdin = new Stream();
+				const stdout = new Stream();
+				const wrongAnswer = '41';
+				const correctAnswer = '42';
+
+				setAnswerTimeout(stdin, wrongAnswer, 20);
+				setAnswerTimeout(stdin, correctAnswer, 40);
+				const spy = sinon.spy();
+
+				return askUser(question, {stdin, stdout}, (answer, count) => {
+					return new Promise((resolve) => {
+						setTimeout(() => {
+							spy(answer, count);
+							resolve(count >= 2); // 1=false, 2=true
+						}, 10);
+					});
+				}).then((answer) => {
+					stdin.destroy();
+					stdout.destroy();
+					const calls = spy.getCalls();
+
+					expect(spy).to.be.calledTwice;
+					expect(calls[0].args[0]).to.equal(wrongAnswer);
+					expect(calls[1].args[0]).to.equal(correctAnswer);
+					return expect(answer).to.equal(correctAnswer);
 				});
 			});
 
@@ -221,7 +250,7 @@ describe('askUser\n  -------', () => {
 	});
 
 	describe('Return', () => {
-		it('returns a promise to the user\'s answer', () => {
+		it('returns a promise that resolves to the user\'s answer', () => {
 			const stdin = new Stream();
 			const stdout = new Stream();
 			const expectedAnswer = '42';
