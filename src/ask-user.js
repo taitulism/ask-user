@@ -16,7 +16,7 @@ async function askUser (...args) {
 	let ended = false;
 	let isValid = false;
 
-	do {
+	while (!ended) {
 		answer = await asyncPrompt(question, readline);
 		isValid = validate(answer, ++triesCounter);
 
@@ -32,7 +32,7 @@ async function askUser (...args) {
 			answer = null;
 			ended = true;
 		}
-	} while (!ended);
+	}
 
 	readline.close();
 	return answer;

@@ -158,14 +158,14 @@ describe('askUser\n  -------', () => {
 				setAnswerTimeout(stdin, correctAnswer, 40);
 				const spy = sinon.spy();
 
-				return askUser(question, {stdin, stdout}, (answer, count) => {
-					return new Promise((resolve) => {
+				return askUser(question, {stdin, stdout}, (answer, count) => (
+					new Promise((resolve) => {
 						setTimeout(() => {
 							spy(answer, count);
 							resolve(count >= 2); // 1=false, 2=true
 						}, 10);
-					});
-				}).then((answer) => {
+					})
+				)).then((answer) => {
 					stdin.destroy();
 					stdout.destroy();
 					const calls = spy.getCalls();
