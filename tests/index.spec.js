@@ -16,6 +16,10 @@ const askUser = require('../');
 
 const THE_ULTIMATE_QUESTION = 'What is the answer to life, the universe and everything?';
 const question = `    ${THE_ULTIMATE_QUESTION}\n    > `;
+const correctAnswer = '42';
+const wrongAnswer1 = 'God';
+const wrongAnswer2 = '41';
+const wrongAnswer3 = '43';
 
 function setAnswerTimeout (stream, text = 'OK', ms = 0) {
 	setTimeout(() => {
@@ -24,12 +28,24 @@ function setAnswerTimeout (stream, text = 'OK', ms = 0) {
 }
 
 describe('askUser\n  -------', () => {
+	let stdin, stdout;
+
+	beforeEach(() => {
+		stdin = new Stream();
+		stdout = new Stream();
+	});
+
+	afterEach(() => {
+		stdin.destroy();
+		stdout.destroy();
+
+		stdin = null;
+		stdout = null;
+	});
+
 	describe('Arguments:', () => {
 		describe('[0] String - Question', () => {
-			it('sends the question to `stdout`', () => {
-				const stdin = new Stream();
-				const stdout = new Stream();
-
+			it('sends the question to `stdout`', async () => {
 				setAnswerTimeout(stdin);
 
 				let text = '';
@@ -37,18 +53,11 @@ describe('askUser\n  -------', () => {
 					text += str;
 				});
 
-				return askUser(question, {stdin, stdout}).then(() => {
-					stdin.destroy();
-					stdout.destroy();
-
-					return expect(text).to.equal(question);
-				});
+				await askUser(question, {stdin, stdout});
+				expect(text).to.equal(question);
 			});
 
-			it('adds a trailing space when the question doesn\'t end with a whitespace', () => {
-				const stdin = new Stream();
-				const stdout = new Stream();
-
+			it('adds a trailing space when the question doesn\'t end with a whitespace', async () => {
 				setAnswerTimeout(stdin);
 
 				let text = '';
@@ -59,18 +68,11 @@ describe('askUser\n  -------', () => {
 				const question = 'is it?';
 				const expected = 'is it? ';
 
-				return askUser(question, {stdin, stdout}).then(() => {
-					stdin.destroy();
-					stdout.destroy();
-
-					return expect(text).to.equal(expected);
-				});
+				await askUser(question, {stdin, stdout});
+				expect(text).to.equal(expected);
 			});
 
-			it('doesn\'t add a trailing space when the question ends with a whitespace', () => {
-				const stdin = new Stream();
-				const stdout = new Stream();
-
+			it('doesn\'t add a trailing space when the question ends with a whitespace', async () => {
 				setAnswerTimeout(stdin);
 
 				let text = '';
@@ -81,12 +83,8 @@ describe('askUser\n  -------', () => {
 				const question = 'is it?\n';
 				const expected = 'is it?\n';
 
-				return askUser(question, {stdin, stdout}).then(() => {
-					stdin.destroy();
-					stdout.destroy();
-
-					return expect(text).to.equal(expected);
-				});
+				await askUser(question, {stdin, stdout});
+				expect(text).to.equal(expected);
 			});
 		});
 
@@ -100,13 +98,7 @@ describe('askUser\n  -------', () => {
 			});
 
 			describe('limit', () => {
-				it('makes `askUser` promise resolve with `null` if max tries exceeded', () => {
-					const stdin = new Stream();
-					const stdout = new Stream();
-					const wrongAnswer1 = '40';
-					const wrongAnswer2 = '41';
-					const wrongAnswer3 = '43';
-					const correctAnswer = '42';
+				it('makes `askUser` promise resolve with `null` if max tries exceeded', async () => {
 					const limit = 3;
 
 					setAnswerTimeout(stdin, wrongAnswer1, 10);
@@ -114,135 +106,101 @@ describe('askUser\n  -------', () => {
 					setAnswerTimeout(stdin, wrongAnswer3, 30);
 					setAnswerTimeout(stdin, correctAnswer, 40);
 					const spy = sinon.spy();
+					const opts = {limit, stdin, stdout};
 
-					return askUser(question, {limit, stdin, stdout}, (answer, tryCount) => {
+					const answer = await askUser(question, opts, (answer, tryCount) => {
 						spy(answer, tryCount);
 						if (answer === correctAnswer) return true;
 						return false;
-					}).then((answer) => {
-						stdin.destroy();
-						stdout.destroy();
-
-						expect(spy.callCount).to.equal(3);
-						expect(answer).to.be.null;
 					});
+
+					expect(spy.callCount).to.equal(3);
+					expect(answer).to.be.null;
 				});
 			});
 		});
 
 		describe('[2] Function - Answer Validation', () => {
-			it('gets called on answer', () => {
-				const stdin = new Stream();
-				const stdout = new Stream();
-
+			it('gets called on answer', async () => {
 				setAnswerTimeout(stdin);
 				const spy = sinon.spy();
 
-				return askUser(question, {stdin, stdout}, (answer, count) => {
+				await askUser(question, {stdin, stdout}, (answer, count) => {
 					spy(answer, count);
 					return true;
-				}).then(() => {
-					stdin.destroy();
-					stdout.destroy();
-					return expect(spy).to.be.calledOnce;
 				});
+
+				expect(spy).to.be.calledOnce;
 			});
 
-			it('handles async validation (promise)', () => {
-				const stdin = new Stream();
-				const stdout = new Stream();
-				const wrongAnswer = '41';
-				const correctAnswer = '42';
-
-				setAnswerTimeout(stdin, wrongAnswer, 20);
+			it('handles async validation (promise)', async () => {
+				setAnswerTimeout(stdin, wrongAnswer1, 20);
 				setAnswerTimeout(stdin, correctAnswer, 40);
 				const spy = sinon.spy();
 
-				return askUser(question, {stdin, stdout}, (answer, count) => (
+				const answer = await askUser(question, {stdin, stdout}, (answer, count) => (
 					new Promise((resolve) => {
 						setTimeout(() => {
 							spy(answer, count);
 							resolve(count >= 2); // 1=false, 2=true
 						}, 10);
 					})
-				)).then((answer) => {
-					stdin.destroy();
-					stdout.destroy();
-					const calls = spy.getCalls();
+				));
 
-					expect(spy).to.be.calledTwice;
-					expect(calls[0].args[0]).to.equal(wrongAnswer);
-					expect(calls[1].args[0]).to.equal(correctAnswer);
-					return expect(answer).to.equal(correctAnswer);
-				});
+				const calls = spy.getCalls();
+
+				expect(spy).to.be.calledTwice;
+				expect(calls[0].args[0]).to.equal(wrongAnswer1);
+				expect(calls[1].args[0]).to.equal(correctAnswer);
+				expect(answer).to.equal(correctAnswer);
 			});
 
 			describe('Arguments:', () => {
 				describe('[0] String - User\'s Answer', () => {
-					it('gets called with the user\'s answer', () => {
-						const stdin = new Stream();
-						const stdout = new Stream();
-						const answer = '42';
-
-						setAnswerTimeout(stdin, answer);
+					it('gets called with the user\'s answer', async () => {
+						setAnswerTimeout(stdin, correctAnswer);
 						const spy = sinon.spy();
 
-						return askUser(question, {stdin, stdout}, (answer, count) => {
+						const answer = await askUser(question, {stdin, stdout}, (answer, count) => {
 							spy(answer, count);
 							return true;
-						}).then((answer) => {
-							stdin.destroy();
-							stdout.destroy();
-							return expect(spy).to.be.calledWith(answer);
 						});
+
+						expect(spy).to.be.calledWith(answer);
 					});
 				});
 
 				describe('[1] Number - Try Number', () => {
-					it('first gets called with the value of 1', () => {
-						const stdin = new Stream();
-						const stdout = new Stream();
-						const answer = '42';
-
-						setAnswerTimeout(stdin, answer);
+					it('first gets called with the value of 1', async () => {
+						setAnswerTimeout(stdin, correctAnswer);
 						const spy = sinon.spy();
 
-						return askUser(question, {stdin, stdout}, (answer, count) => {
+						const answer = await askUser(question, {stdin, stdout}, (answer, count) => {
 							spy(answer, count);
 							return true;
-						}).then((answer) => {
-							stdin.destroy();
-							stdout.destroy();
-							return expect(spy).to.be.calledWith(answer, 1);
 						});
+
+						expect(spy).to.be.calledWith(answer, 1);
 					});
 
-					it('increments on each try', () => {
-						const stdin = new Stream();
-						const stdout = new Stream();
-						const wrongAnswer1 = '41';
-						const wrongAnswer2 = '43';
-						const correctAnswer = '42';
-
+					it('increments on each try', async () => {
 						setAnswerTimeout(stdin, wrongAnswer1, 10);
 						setAnswerTimeout(stdin, wrongAnswer2, 20);
 						setAnswerTimeout(stdin, correctAnswer, 30);
 						const spy = sinon.spy();
 
-						return askUser(question, {stdin, stdout}, (answer, tryCount) => {
+						await askUser(question, {stdin, stdout}, (answer, tryCount) => {
 							spy(answer, tryCount);
 							if (answer === correctAnswer) return true;
 							return false;
-						}).then(() => {
-							stdin.destroy();
-							stdout.destroy();
-							const calls = spy.getCalls();
-
-							expect(spy.callCount).to.equal(3);
-							expect(calls[0].args).to.deep.equal(['41', 1]);
-							expect(calls[1].args).to.deep.equal(['43', 2]);
-							expect(calls[2].args).to.deep.equal(['42', 3]);
 						});
+
+						const calls = spy.getCalls();
+
+						expect(spy.callCount).to.equal(3);
+						expect(calls[0].args).to.deep.equal([wrongAnswer1, 1]);
+						expect(calls[1].args).to.deep.equal([wrongAnswer2, 2]);
+						expect(calls[2].args).to.deep.equal([correctAnswer, 3]);
 					});
 				});
 			});
@@ -250,19 +208,12 @@ describe('askUser\n  -------', () => {
 	});
 
 	describe('Return', () => {
-		it('returns a promise that resolves to the user\'s answer', () => {
-			const stdin = new Stream();
-			const stdout = new Stream();
-			const expectedAnswer = '42';
+		it('returns a promise that resolves to the user\'s answer', async () => {
+			setAnswerTimeout(stdin, correctAnswer);
 
-			setAnswerTimeout(stdin, expectedAnswer);
+			const answer = await askUser(question, {stdin, stdout});
 
-			return askUser(question, {stdin, stdout}).then((answer) => {
-				stdin.destroy();
-				stdout.destroy();
-
-				return expect(answer).to.equal(expectedAnswer);
-			});
+			expect(answer).to.equal(correctAnswer);
 		});
 	});
 });
