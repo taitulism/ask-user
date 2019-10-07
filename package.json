@@ -1,13 +1,13 @@
 {
-   "name": "TPL",
-   "description": "Doing stuff.",
+   "name": "ask-user",
+   "description": "Simple CLI prompt to get user input.",
    "version": "0.0.0",
    "license": "MIT",
    "private": true,
    "main": "./index.js",
    "author": "Taitu Lizenbaum <taitu.dev@gmail.com>",
-   "homepage": "https://github.com/taitulism/TPL#readme",
-   "repository": "github:taitulism/TPL",
+   "homepage": "https://github.com/taitulism/ask-user#readme",
+   "repository": "github:taitulism/ask-user",
    "scripts": {
       "dev": "mocha ./tests --watch",
       "test": "mocha ./tests",
@@ -24,5 +24,14 @@
       "mocha": "*",
       "sinon": "^7.5.0",
       "sinon-chai": "^3.3.0"
-   }
+   },
+   "keywords": [
+	   "prompt",
+	   "ask",
+	   "question",
+	   "input",
+	   "answer",
+	   "cli",
+	   "command-line"
+   ]
 }
