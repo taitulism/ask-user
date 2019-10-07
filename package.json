@@ -18,20 +18,20 @@
       "postversion": "git push && git push --tags"
    },
    "devDependencies": {
-      "chai": "*",
-      "chai-as-promised": "*",
-      "eslint": "*",
-      "mocha": "*",
+      "chai": "^4.2.0",
+      "chai-as-promised": "^7.1.1",
+      "eslint": "^6.5.1",
+      "mocha": "^6.2.1",
       "sinon": "^7.5.0",
       "sinon-chai": "^3.3.0"
    },
    "keywords": [
-	   "prompt",
-	   "ask",
-	   "question",
-	   "input",
-	   "answer",
-	   "cli",
-	   "command-line"
+      "prompt",
+      "ask",
+      "question",
+      "input",
+      "answer",
+      "cli",
+      "command-line"
    ]
 }
