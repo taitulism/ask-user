@@ -173,6 +173,36 @@ describe('askUser\n  -------', () => {
 				expect(answer).to.equal(correctAnswer);
 			});
 
+			it('can handle validation thrown error', () => {
+				setAnswerTimeout(stdin, wrongAnswer1, 20);
+				const errMsg = 'did you get it?';
+
+				return askUser(question, {stdin, stdout}, () => {
+					throw new Error(errMsg);
+				}).then(() => {
+					expect(true).to.be.false;
+				}).catch((err) => {
+					expect(err.message).to.equal(errMsg);
+				});
+			});
+
+			it('can handle validation promise rejection', () => {
+				setAnswerTimeout(stdin, wrongAnswer1, 10);
+				const errMsg = 'did you get it?';
+
+				return askUser(question, {stdin, stdout}, () => {
+					return new Promise((resolve, reject) => {
+						setTimeout(() => {
+							reject(new Error(errMsg));
+						}, 20);
+					});
+				}).then(() => {
+					expect(true).to.be.false;
+				}).catch((err) => {
+					expect(err.message).to.equal(errMsg);
+				});
+			});
+
 			describe('Arguments:', () => {
 				describe('[0] String - User\'s Answer', () => {
 					it('gets called with the user\'s answer', async () => {
