@@ -86,6 +86,20 @@ describe('askUser\n  -------', () => {
 				await askUser(question, {stdin, stdout});
 				expect(text).to.equal(expected);
 			});
+
+			it('default question: `Press "ENTER" to continue...`', async () => {
+				setAnswerTimeout(stdin);
+
+				let text = '';
+				stdout.on('data', (str) => {
+					text += str;
+				});
+
+				const expected = 'Press "ENTER" to continue... ';
+
+				await askUser({stdin, stdout});
+				expect(text).to.equal(expected);
+			});
 		});
 
 		describe('[1] Object - Options', () => {
