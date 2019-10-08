@@ -190,13 +190,13 @@ describe('askUser\n  -------', () => {
 				setAnswerTimeout(stdin, wrongAnswer1, 10);
 				const errMsg = 'did you get it?';
 
-				return askUser(question, {stdin, stdout}, () => {
-					return new Promise((resolve, reject) => {
+				return askUser(question, {stdin, stdout}, () => (
+					new Promise((resolve, reject) => {
 						setTimeout(() => {
 							reject(new Error(errMsg));
 						}, 20);
-					});
-				}).then(() => {
+					})
+				)).then(() => {
 					expect(true).to.be.false;
 				}).catch((err) => {
 					expect(err.message).to.equal(errMsg);
