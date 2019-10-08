@@ -18,7 +18,7 @@ async function askUser (...args) {
 
 	while (!ended) {
 		answer = await asyncPrompt(question, readline);
-		isValid = validate(answer, ++triesCounter);
+		isValid = validate(answer);
 
 		if (isValid instanceof Promise) {
 			isValid = await isValid;
@@ -28,7 +28,7 @@ async function askUser (...args) {
 			if (isValid !== true) answer = isValid;
 			ended = true;
 		}
-		else if (limit && limit <= triesCounter) {
+		else if (limit && limit <= ++triesCounter) {
 			answer = null;
 			ended = true;
 		}

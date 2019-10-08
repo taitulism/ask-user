@@ -108,8 +108,8 @@ describe('askUser\n  -------', () => {
 					const spy = sinon.spy();
 					const opts = {limit, stdin, stdout};
 
-					const answer = await askUser(question, opts, (answer, tryCount) => {
-						spy(answer, tryCount);
+					const answer = await askUser(question, opts, (answer) => {
+						spy(answer);
 						if (answer === correctAnswer) return true;
 						return false;
 					});
@@ -125,8 +125,8 @@ describe('askUser\n  -------', () => {
 				setAnswerTimeout(stdin);
 				const spy = sinon.spy();
 
-				await askUser(question, {stdin, stdout}, (answer, count) => {
-					spy(answer, count);
+				await askUser(question, {stdin, stdout}, (answer) => {
+					spy(answer);
 					return true;
 				});
 
@@ -138,14 +138,18 @@ describe('askUser\n  -------', () => {
 				setAnswerTimeout(stdin, correctAnswer, 40);
 				const spy = sinon.spy();
 
-				const answer = await askUser(question, {stdin, stdout}, (answer, count) => (
-					new Promise((resolve) => {
+				let count = 0;
+
+				const answer = await askUser(question, {stdin, stdout}, (answer) => {
+					count++;
+
+					return new Promise((resolve) => {
 						setTimeout(() => {
-							spy(answer, count);
+							spy(answer);
 							resolve(count >= 2); // 1=false, 2=true
 						}, 10);
-					})
-				));
+					});
+				});
 
 				const calls = spy.getCalls();
 
@@ -161,46 +165,12 @@ describe('askUser\n  -------', () => {
 						setAnswerTimeout(stdin, correctAnswer);
 						const spy = sinon.spy();
 
-						const answer = await askUser(question, {stdin, stdout}, (answer, count) => {
-							spy(answer, count);
+						const answer = await askUser(question, {stdin, stdout}, (answer) => {
+							spy(answer);
 							return true;
 						});
 
 						expect(spy).to.be.calledWith(answer);
-					});
-				});
-
-				describe('[1] Number - Try Number', () => {
-					it('first gets called with the value of 1', async () => {
-						setAnswerTimeout(stdin, correctAnswer);
-						const spy = sinon.spy();
-
-						const answer = await askUser(question, {stdin, stdout}, (answer, count) => {
-							spy(answer, count);
-							return true;
-						});
-
-						expect(spy).to.be.calledWith(answer, 1);
-					});
-
-					it('increments on each try', async () => {
-						setAnswerTimeout(stdin, wrongAnswer1, 10);
-						setAnswerTimeout(stdin, wrongAnswer2, 20);
-						setAnswerTimeout(stdin, correctAnswer, 30);
-						const spy = sinon.spy();
-
-						await askUser(question, {stdin, stdout}, (answer, tryCount) => {
-							spy(answer, tryCount);
-							if (answer === correctAnswer) return true;
-							return false;
-						});
-
-						const calls = spy.getCalls();
-
-						expect(spy.callCount).to.equal(3);
-						expect(calls[0].args).to.deep.equal([wrongAnswer1, 1]);
-						expect(calls[1].args).to.deep.equal([wrongAnswer2, 2]);
-						expect(calls[2].args).to.deep.equal([correctAnswer, 3]);
 					});
 				});
 			});
