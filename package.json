@@ -3,7 +3,6 @@
    "description": "A simple CLI prompt to get user input.",
    "version": "0.0.0",
    "license": "MIT",
-   "private": true,
    "main": "./index.js",
    "author": "Taitu Lizenbaum <taitu.dev@gmail.com>",
    "homepage": "https://github.com/taitulism/ask-user#readme",
