@@ -129,17 +129,38 @@ describe('askUser\n  -------', () => {
 
 					const answer = await askUser(question, opts, (answer) => {
 						spy(answer);
-						if (answer === correctAnswer) return true;
-						return false;
+						return (answer === correctAnswer);
 					});
 
 					expect(spy.callCount).to.equal(3);
 					expect(answer).to.be.null;
 				});
 			});
+
+			describe('onAnswer', () => {
+				it('is alias for `answerHandler` function argument', async () => {
+					setAnswerTimeout(stdin, wrongAnswer1, 10);
+					setAnswerTimeout(stdin, correctAnswer, 20);
+
+					const spy = sinon.spy();
+
+					const onAnswer = (answer) => {
+						spy(answer);
+						return (answer === correctAnswer);
+					};
+
+					const opts = {stdin, stdout, onAnswer};
+					await askUser(question, opts);
+
+					const spyCalls = spy.getCalls();
+					expect(spyCalls[0].args[0]).to.equal(wrongAnswer1);
+					expect(spyCalls[1].args[0]).to.equal(correctAnswer);
+					expect(spyCalls.length).to.equal(2);
+				});
+			});
 		});
 
-		describe('[2] Function - Answer Validation', () => {
+		describe('[2] Function - Answer Handler', () => {
 			describe('Arguments:', () => {
 				describe('[0] String - User\'s Answer', () => {
 					it('is the user\'s answer', async () => {
@@ -234,6 +255,52 @@ describe('askUser\n  -------', () => {
 				});
 
 				expect(spy).to.be.calledOnce;
+			});
+
+			it('gets called on each and every answer', async () => {
+				setAnswerTimeout(stdin, wrongAnswer1, 10);
+				setAnswerTimeout(stdin, wrongAnswer2, 20);
+				setAnswerTimeout(stdin, wrongAnswer3, 30);
+				setAnswerTimeout(stdin, correctAnswer, 40);
+
+				const spy = sinon.spy();
+
+				await askUser(question, {stdin, stdout}, (answer) => {
+					spy(answer);
+					return (answer === correctAnswer);
+				});
+
+				const spyCalls = spy.getCalls();
+
+				expect(spyCalls.length).to.equal(4);
+				expect(spyCalls[0].args[0]).to.equal(wrongAnswer1);
+				expect(spyCalls[1].args[0]).to.equal(wrongAnswer2);
+				expect(spyCalls[2].args[0]).to.equal(wrongAnswer3);
+				expect(spyCalls[3].args[0]).to.equal(correctAnswer);
+			});
+
+			it('overrides `opts.onAnswer` alias if both exists', async () => {
+				setAnswerTimeout(stdin, wrongAnswer1, 10);
+				setAnswerTimeout(stdin, correctAnswer, 20);
+
+				const spy = sinon.spy();
+
+				const optsOnAnswer = (answer) => {
+					spy(answer);
+					return (answer === correctAnswer);
+				};
+
+				const argOnAnswer = (answer, count) => {
+					spy(count);
+					return (answer === correctAnswer);
+				};
+
+				const opts = {stdin, stdout, optsOnAnswer};
+				await askUser(question, opts, argOnAnswer);
+
+				const spyCalls = spy.getCalls();
+				expect(spyCalls[0].args[0]).to.equal(1);
+				expect(spyCalls[1].args[0]).to.equal(2);
 			});
 
 			it('handles async validation (promise)', async () => {

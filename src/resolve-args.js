@@ -17,7 +17,7 @@ module.exports = function resolveArgs (...args) {
 
 	const options = typesMap.get('object') || {};
 	const limit = typesMap.get('number') || options.limit || 0;
-	const validate = typesMap.get('function') || options.validate || (() => (true));
+	const answerHandler = typesMap.get('function') || options.onAnswer || (() => (true));
 
-	return [question, options, limit, validate];
+	return [question, options, limit, answerHandler];
 };
