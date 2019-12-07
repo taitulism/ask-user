@@ -205,7 +205,7 @@ describe('askUser\n  -------', () => {
 
 			describe('Arguments:', () => {
 				describe('[0] String - User\'s Answer', () => {
-					it('gets called with the user\'s answer', async () => {
+					it('is the user\'s answer', async () => {
 						setAnswerTimeout(stdin, correctAnswer);
 						const spy = sinon.spy();
 
@@ -215,6 +215,27 @@ describe('askUser\n  -------', () => {
 						});
 
 						expect(spy).to.be.calledWith(answer);
+					});
+				});
+
+				describe('[1] Number - Question Count', () => {
+					it('is the try number', async () => {
+						setAnswerTimeout(stdin, wrongAnswer1, 10);
+						setAnswerTimeout(stdin, wrongAnswer2, 20);
+						setAnswerTimeout(stdin, correctAnswer, 30);
+						const spy = sinon.spy();
+
+						await askUser(question, {stdin, stdout}, 3, (answer, questionCount) => {
+							spy(questionCount);
+							return false;
+						});
+
+						const spyCalls = spy.getCalls();
+
+						expect(spyCalls.length).to.equal(3);
+						expect(spyCalls[0].args[0]).to.equal(1);
+						expect(spyCalls[1].args[0]).to.equal(2);
+						expect(spyCalls[2].args[0]).to.equal(3);
 					});
 				});
 			});

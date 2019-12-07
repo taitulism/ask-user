@@ -12,13 +12,14 @@ async function askUser (...args) {
 	});
 
 	let answer;
-	let triesCounter = 0;
-	let ended = false;
+	let count = 0;
+	let isDone = false;
 	let isValid = false;
 
-	while (!ended) {
+	while (!isDone) {
+		count++;
 		answer = await asyncPrompt(question, readline);
-		isValid = validate(answer);
+		isValid = validate(answer, count);
 
 		if (isValid instanceof Promise) {
 			isValid = await isValid;
@@ -26,11 +27,11 @@ async function askUser (...args) {
 
 		if (isValid) {
 			if (isValid !== true) answer = isValid;
-			ended = true;
+			isDone = true;
 		}
-		else if (limit && limit <= ++triesCounter) {
+		else if (limit && limit <= count) {
 			answer = null;
-			ended = true;
+			isDone = true;
 		}
 	}
 
