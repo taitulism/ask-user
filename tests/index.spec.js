@@ -1,4 +1,8 @@
-/* eslint-disable no-empty-function, object-property-newline */
+/* eslint-disable
+	no-empty-function,
+	object-property-newline,
+	max-lines
+*/
 
 const {EOL} = require('os');
 const {PassThrough: Stream} = require('stream');
@@ -14,6 +18,7 @@ chai.use(chaiAsPromised);
 
 const askUser = require('../');
 
+const OK = 'OK';
 const THE_ULTIMATE_QUESTION = 'What is the answer to life, the universe and everything?';
 const question = `    ${THE_ULTIMATE_QUESTION}\n    > `;
 const correctAnswer = '42';
@@ -21,7 +26,7 @@ const wrongAnswer1 = 'God';
 const wrongAnswer2 = '41';
 const wrongAnswer3 = '43';
 
-function setAnswerTimeout (stream, text = 'OK', ms = 0) {
+function setAnswerTimeout (stream, text = OK, ms = 0) {
 	setTimeout(() => {
 		stream.emit('data', text + EOL);
 	}, ms);
@@ -135,6 +140,90 @@ describe('askUser\n  -------', () => {
 		});
 
 		describe('[2] Function - Answer Validation', () => {
+			describe('Arguments:', () => {
+				describe('[0] String - User\'s Answer', () => {
+					it('is the user\'s answer', async () => {
+						setAnswerTimeout(stdin, correctAnswer);
+						const spy = sinon.spy();
+
+						const answer = await askUser(question, {stdin, stdout}, (answer) => {
+							spy(answer);
+							return true;
+						});
+
+						expect(spy).to.be.calledWith(answer);
+					});
+				});
+
+				describe('[1] Number - Question Count', () => {
+					it('is the try number', async () => {
+						setAnswerTimeout(stdin, wrongAnswer1, 10);
+						setAnswerTimeout(stdin, wrongAnswer2, 20);
+						setAnswerTimeout(stdin, correctAnswer, 30);
+						const spy = sinon.spy();
+
+						await askUser(question, {stdin, stdout}, 3, (answer, questionCount) => {
+							spy(questionCount);
+							return false;
+						});
+
+						const spyCalls = spy.getCalls();
+
+						expect(spyCalls.length).to.equal(3);
+						expect(spyCalls[0].args[0]).to.equal(1);
+						expect(spyCalls[1].args[0]).to.equal(2);
+						expect(spyCalls[2].args[0]).to.equal(3);
+					});
+				});
+			});
+
+			describe('Return value behavior', () => {
+				it('when return false, retry and ask again', async () => {
+					setAnswerTimeout(stdin, 'first', 10);
+					setAnswerTimeout(stdin, 'second', 20);
+
+					let keepCount;
+
+					const answer = await askUser(question, {stdin, stdout}, (answer, count) => {
+						keepCount = count;
+						if (count === 1) {
+							return false;
+						}
+						return true;
+					});
+
+					expect(keepCount).to.equal(2);
+					expect(answer).to.equal('second');
+				});
+
+				it('when return true, current answer is the final answer', async () => {
+					setAnswerTimeout(stdin);
+					const answer = await askUser(question, {stdin, stdout}, () => true);
+
+					expect(answer).to.equal(OK);
+				});
+
+				it('when return a truthy value, that value is the final answer', async () => {
+					setAnswerTimeout(stdin, OK);
+					const answer = await askUser(question, {stdin, stdout}, answer => answer.toLowerCase());
+
+					expect(answer).to.equal(OK.toLowerCase());
+				});
+
+				it('when return null or undefined, exit with `null` even if tries left', async () => {
+					setAnswerTimeout(stdin);
+					let keepCount;
+
+					const answer = await askUser(question, {stdin, stdout}, 3, (answer, count) => {
+						keepCount = count;
+						return null;
+					});
+
+					expect(answer).to.equal(null);
+					expect(keepCount).to.equal(1);
+				});
+			});
+
 			it('gets called on answer', async () => {
 				setAnswerTimeout(stdin);
 				const spy = sinon.spy();
@@ -200,43 +289,6 @@ describe('askUser\n  -------', () => {
 					expect(true).to.be.false;
 				}).catch((err) => {
 					expect(err.message).to.equal(errMsg);
-				});
-			});
-
-			describe('Arguments:', () => {
-				describe('[0] String - User\'s Answer', () => {
-					it('is the user\'s answer', async () => {
-						setAnswerTimeout(stdin, correctAnswer);
-						const spy = sinon.spy();
-
-						const answer = await askUser(question, {stdin, stdout}, (answer) => {
-							spy(answer);
-							return true;
-						});
-
-						expect(spy).to.be.calledWith(answer);
-					});
-				});
-
-				describe('[1] Number - Question Count', () => {
-					it('is the try number', async () => {
-						setAnswerTimeout(stdin, wrongAnswer1, 10);
-						setAnswerTimeout(stdin, wrongAnswer2, 20);
-						setAnswerTimeout(stdin, correctAnswer, 30);
-						const spy = sinon.spy();
-
-						await askUser(question, {stdin, stdout}, 3, (answer, questionCount) => {
-							spy(questionCount);
-							return false;
-						});
-
-						const spyCalls = spy.getCalls();
-
-						expect(spyCalls.length).to.equal(3);
-						expect(spyCalls[0].args[0]).to.equal(1);
-						expect(spyCalls[1].args[0]).to.equal(2);
-						expect(spyCalls[2].args[0]).to.equal(3);
-					});
 				});
 			});
 		});

@@ -26,12 +26,16 @@ async function askUser (...args) {
 		}
 
 		if (isValid) {
+			isDone = true;
 			if (isValid !== true) answer = isValid;
-			isDone = true;
 		}
-		else if (limit && limit <= count) {
+		else {
 			answer = null;
-			isDone = true;
+
+			const limitExceeded = limit && count >= limit;
+
+			/* eslint-disable-next-line no-eq-null, eqeqeq */
+			if (isValid == null || limitExceeded) isDone = true;
 		}
 	}
 
