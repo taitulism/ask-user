@@ -16,7 +16,8 @@ const expect = chai.expect;
 chai.use(sinonChai);
 chai.use(chaiAsPromised);
 
-const askUser = require('../');
+const realAskUser = require('../');
+const resolveArgs = require('../src/resolve-args');
 
 const OK = 'OK';
 const THE_ULTIMATE_QUESTION = 'What is the answer to life, the universe and everything?';
@@ -33,17 +34,24 @@ function setAnswerTimeout (stream, text = OK, ms = 0) {
 }
 
 describe('askUser\n  -------', () => {
-	let stdin, stdout;
+	let stdin, stdout, askUser;
 
 	beforeEach(() => {
 		stdin = new Stream();
 		stdout = new Stream();
+		askUser = (...args) => {
+			const [question, opts, limit, answerHandler] = resolveArgs(...args);
+			opts.stdin = stdin;
+			opts.stdout = stdout;
+			return realAskUser(question, opts, limit, answerHandler);
+		};
 	});
 
 	afterEach(() => {
 		stdin.destroy();
 		stdout.destroy();
 
+		askUser = null;
 		stdin = null;
 		stdout = null;
 	});
@@ -58,7 +66,7 @@ describe('askUser\n  -------', () => {
 					text += str;
 				});
 
-				await askUser(question, {stdin, stdout});
+				await askUser(question);
 				expect(text).to.equal(question);
 			});
 
@@ -73,7 +81,7 @@ describe('askUser\n  -------', () => {
 				const question = 'is it?';
 				const expected = 'is it? ';
 
-				await askUser(question, {stdin, stdout});
+				await askUser(question);
 				expect(text).to.equal(expected);
 			});
 
@@ -88,7 +96,7 @@ describe('askUser\n  -------', () => {
 				const question = 'is it?\n';
 				const expected = 'is it?\n';
 
-				await askUser(question, {stdin, stdout});
+				await askUser(question);
 				expect(text).to.equal(expected);
 			});
 
@@ -102,7 +110,7 @@ describe('askUser\n  -------', () => {
 
 				const expected = 'Press "ENTER" to continue... ';
 
-				await askUser({stdin, stdout});
+				await askUser();
 				expect(text).to.equal(expected);
 			});
 		});
@@ -118,14 +126,13 @@ describe('askUser\n  -------', () => {
 
 			describe('limit', () => {
 				it('makes `askUser` promise resolve with `null` if max tries exceeded', async () => {
-					const limit = 3;
-
 					setAnswerTimeout(stdin, wrongAnswer1, 10);
 					setAnswerTimeout(stdin, wrongAnswer2, 20);
 					setAnswerTimeout(stdin, wrongAnswer3, 30);
 					setAnswerTimeout(stdin, correctAnswer, 40);
+
 					const spy = sinon.spy();
-					const opts = {limit, stdin, stdout};
+					const opts = {limit: 3};
 
 					const answer = await askUser(question, opts, (answer) => {
 						spy(answer);
@@ -149,107 +156,23 @@ describe('askUser\n  -------', () => {
 						return (answer === correctAnswer);
 					};
 
-					const opts = {stdin, stdout, onAnswer};
+					const opts = {onAnswer};
 					await askUser(question, opts);
 
-					const spyCalls = spy.getCalls();
-					expect(spyCalls[0].args[0]).to.equal(wrongAnswer1);
-					expect(spyCalls[1].args[0]).to.equal(correctAnswer);
-					expect(spyCalls.length).to.equal(2);
+					const calls = spy.getCalls();
+					expect(calls[0].args[0]).to.equal(wrongAnswer1);
+					expect(calls[1].args[0]).to.equal(correctAnswer);
+					expect(calls.length).to.equal(2);
 				});
 			});
 		});
 
 		describe('[2] Function - Answer Handler', () => {
-			describe('Arguments:', () => {
-				describe('[0] String - User\'s Answer', () => {
-					it('is the user\'s answer', async () => {
-						setAnswerTimeout(stdin, correctAnswer);
-						const spy = sinon.spy();
-
-						const answer = await askUser(question, {stdin, stdout}, (answer) => {
-							spy(answer);
-							return true;
-						});
-
-						expect(spy).to.be.calledWith(answer);
-					});
-				});
-
-				describe('[1] Number - Question Count', () => {
-					it('is the try number', async () => {
-						setAnswerTimeout(stdin, wrongAnswer1, 10);
-						setAnswerTimeout(stdin, wrongAnswer2, 20);
-						setAnswerTimeout(stdin, correctAnswer, 30);
-						const spy = sinon.spy();
-
-						await askUser(question, {stdin, stdout}, 3, (answer, questionCount) => {
-							spy(questionCount);
-							return false;
-						});
-
-						const spyCalls = spy.getCalls();
-
-						expect(spyCalls.length).to.equal(3);
-						expect(spyCalls[0].args[0]).to.equal(1);
-						expect(spyCalls[1].args[0]).to.equal(2);
-						expect(spyCalls[2].args[0]).to.equal(3);
-					});
-				});
-			});
-
-			describe('Return value behavior', () => {
-				it('when return false, retry and ask again', async () => {
-					setAnswerTimeout(stdin, 'first', 10);
-					setAnswerTimeout(stdin, 'second', 20);
-
-					let keepCount;
-
-					const answer = await askUser(question, {stdin, stdout}, (answer, count) => {
-						keepCount = count;
-						if (count === 1) {
-							return false;
-						}
-						return true;
-					});
-
-					expect(keepCount).to.equal(2);
-					expect(answer).to.equal('second');
-				});
-
-				it('when return true, current answer is the final answer', async () => {
-					setAnswerTimeout(stdin);
-					const answer = await askUser(question, {stdin, stdout}, () => true);
-
-					expect(answer).to.equal(OK);
-				});
-
-				it('when return a truthy value, that value is the final answer', async () => {
-					setAnswerTimeout(stdin, OK);
-					const answer = await askUser(question, {stdin, stdout}, answer => answer.toLowerCase());
-
-					expect(answer).to.equal(OK.toLowerCase());
-				});
-
-				it('when return null or undefined, exit with `null` even if tries left', async () => {
-					setAnswerTimeout(stdin);
-					let keepCount;
-
-					const answer = await askUser(question, {stdin, stdout}, 3, (answer, count) => {
-						keepCount = count;
-						return null;
-					});
-
-					expect(answer).to.equal(null);
-					expect(keepCount).to.equal(1);
-				});
-			});
-
 			it('gets called on answer', async () => {
 				setAnswerTimeout(stdin);
 				const spy = sinon.spy();
 
-				await askUser(question, {stdin, stdout}, (answer) => {
+				await askUser(question, (answer) => {
 					spy(answer);
 					return true;
 				});
@@ -265,18 +188,18 @@ describe('askUser\n  -------', () => {
 
 				const spy = sinon.spy();
 
-				await askUser(question, {stdin, stdout}, (answer) => {
+				await askUser(question, (answer) => {
 					spy(answer);
 					return (answer === correctAnswer);
 				});
 
-				const spyCalls = spy.getCalls();
+				const calls = spy.getCalls();
 
-				expect(spyCalls.length).to.equal(4);
-				expect(spyCalls[0].args[0]).to.equal(wrongAnswer1);
-				expect(spyCalls[1].args[0]).to.equal(wrongAnswer2);
-				expect(spyCalls[2].args[0]).to.equal(wrongAnswer3);
-				expect(spyCalls[3].args[0]).to.equal(correctAnswer);
+				expect(calls.length).to.equal(4);
+				expect(calls[0].args[0]).to.equal(wrongAnswer1);
+				expect(calls[1].args[0]).to.equal(wrongAnswer2);
+				expect(calls[2].args[0]).to.equal(wrongAnswer3);
+				expect(calls[3].args[0]).to.equal(correctAnswer);
 			});
 
 			it('overrides `opts.onAnswer` alias if both exists', async () => {
@@ -295,31 +218,27 @@ describe('askUser\n  -------', () => {
 					return (answer === correctAnswer);
 				};
 
-				const opts = {stdin, stdout, optsOnAnswer};
+				const opts = {onAnswer: optsOnAnswer};
 				await askUser(question, opts, argOnAnswer);
 
-				const spyCalls = spy.getCalls();
-				expect(spyCalls[0].args[0]).to.equal(1);
-				expect(spyCalls[1].args[0]).to.equal(2);
+				const calls = spy.getCalls();
+				expect(calls[0].args[0]).to.equal(1);
+				expect(calls[1].args[0]).to.equal(2);
 			});
 
-			it('handles async validation (promise)', async () => {
-				setAnswerTimeout(stdin, wrongAnswer1, 20);
-				setAnswerTimeout(stdin, correctAnswer, 40);
+			it('handles async answerHandler (promise)', async () => {
+				setAnswerTimeout(stdin, wrongAnswer1, 10);
+				setAnswerTimeout(stdin, correctAnswer, 30);
 				const spy = sinon.spy();
 
-				let count = 0;
-
-				const answer = await askUser(question, {stdin, stdout}, (answer) => {
-					count++;
-
-					return new Promise((resolve) => {
+				const answer = await askUser(question, (answer, count) => (
+					new Promise((resolve) => {
 						setTimeout(() => {
 							spy(answer);
 							resolve(count >= 2); // 1=false, 2=true
 						}, 10);
-					});
-				});
+					})
+				));
 
 				const calls = spy.getCalls();
 
@@ -329,11 +248,11 @@ describe('askUser\n  -------', () => {
 				expect(answer).to.equal(correctAnswer);
 			});
 
-			it('can handle validation thrown error', () => {
-				setAnswerTimeout(stdin, wrongAnswer1, 20);
+			it('handles answerHandler thrown error', () => {
+				setAnswerTimeout(stdin, wrongAnswer1, 10);
 				const errMsg = 'did you get it?';
 
-				return askUser(question, {stdin, stdout}, () => {
+				return askUser(question, () => {
 					throw new Error(errMsg);
 				}).then(() => {
 					expect(true).to.be.false;
@@ -342,11 +261,11 @@ describe('askUser\n  -------', () => {
 				});
 			});
 
-			it('can handle validation promise rejection', () => {
+			it('handles answerHandler promise rejection', () => {
 				setAnswerTimeout(stdin, wrongAnswer1, 10);
 				const errMsg = 'did you get it?';
 
-				return askUser(question, {stdin, stdout}, () => (
+				return askUser(question, () => (
 					new Promise((resolve, reject) => {
 						setTimeout(() => {
 							reject(new Error(errMsg));
@@ -358,6 +277,90 @@ describe('askUser\n  -------', () => {
 					expect(err.message).to.equal(errMsg);
 				});
 			});
+
+			describe('Arguments:', () => {
+				describe('[0] String - User\'s Answer', () => {
+					it('is the user\'s answer', async () => {
+						setAnswerTimeout(stdin, correctAnswer);
+						const spy = sinon.spy();
+
+						const answer = await askUser(question, (answer) => {
+							spy(answer);
+							return true;
+						});
+
+						expect(spy).to.be.calledWith(answer);
+					});
+				});
+
+				describe('[1] Number - Question Count', () => {
+					it('is the try number', async () => {
+						setAnswerTimeout(stdin, wrongAnswer1, 10);
+						setAnswerTimeout(stdin, wrongAnswer2, 20);
+						setAnswerTimeout(stdin, correctAnswer, 30);
+						const spy = sinon.spy();
+
+						await askUser(question, 3, (answer, questionCount) => {
+							spy(questionCount);
+							return false;
+						});
+
+						const calls = spy.getCalls();
+
+						expect(calls.length).to.equal(3);
+						expect(calls[0].args[0]).to.equal(1);
+						expect(calls[1].args[0]).to.equal(2);
+						expect(calls[2].args[0]).to.equal(3);
+					});
+				});
+			});
+
+			describe('Return value behavior', () => {
+				it('when return false, retry and ask again', async () => {
+					setAnswerTimeout(stdin, 'first', 10);
+					setAnswerTimeout(stdin, 'second', 20);
+
+					let keepCount;
+
+					const answer = await askUser(question, (answer, count) => {
+						keepCount = count;
+						if (count === 1) {
+							return false;
+						}
+						return true;
+					});
+
+					expect(keepCount).to.equal(2);
+					expect(answer).to.equal('second');
+				});
+
+				it('when return true, current answer is the final answer', async () => {
+					setAnswerTimeout(stdin);
+					const answer = await askUser(question, () => true);
+
+					expect(answer).to.equal(OK);
+				});
+
+				it('when return a truthy value, that value is the final answer', async () => {
+					setAnswerTimeout(stdin, OK);
+					const answer = await askUser(question, answer => answer.toLowerCase());
+
+					expect(answer).to.equal(OK.toLowerCase());
+				});
+
+				it('when return null or undefined, exit with `null` even if has more tries left', async () => {
+					setAnswerTimeout(stdin);
+					let keepCount;
+
+					const answer = await askUser(question, 3, (answer, count) => {
+						keepCount = count;
+						return null;
+					});
+
+					expect(answer).to.equal(null);
+					expect(keepCount).to.equal(1);
+				});
+			});
 		});
 	});
 
@@ -365,7 +368,7 @@ describe('askUser\n  -------', () => {
 		it('returns a promise that resolves to the user\'s answer', async () => {
 			setAnswerTimeout(stdin, correctAnswer);
 
-			const answer = await askUser(question, {stdin, stdout});
+			const answer = await askUser(question);
 
 			expect(answer).to.equal(correctAnswer);
 		});
