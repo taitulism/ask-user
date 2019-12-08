@@ -178,6 +178,20 @@ const answer = await askUser(question, {
 ```
 > Limiting the number of tries should come with an answer-handler or it will be ignored.
 
+### **strOnly**
+`askUser` auto converts answers to numbers and booleans when it is possible. An answer of `'42'` (string) will become `42` (number). `'y','Y','Yes','YES'` become `true` and `'n','N','No','NO'` become `false`.
+You can disable this behavior with this option:
+```js
+// Let's say the user answers with 'YES' for both questions:
+
+const answer = await askUser(question, {strOnly: true});
+// Final answer is 'YES'
+
+const answer = await askUser(question, {strOnly: false});
+// Final answer is true
+
+```
+
 ### **stdout & stdin**
 By default `askUser` sends the question to the `process.stdout` and waits for the answer from `process.stdin`. You can pass other streams using the options object.
 ```js
