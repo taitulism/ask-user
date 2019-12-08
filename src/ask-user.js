@@ -1,4 +1,5 @@
 /* eslint-disable no-await-in-loop */
+/* eslint no-magic-numbers: ["error", { "ignore": [0,1,2,3] }] */
 
 const {createInterface} = require('readline');
 const resolveArgs = require('./resolve-args');
@@ -18,7 +19,7 @@ async function askUser (...args) {
 	while (!isDone) {
 		count++;
 		rawAnswer = await asyncPrompt(question, readline);
-		answer = resolveAnswerType(rawAnswer);
+		answer = opts.strOnly ? rawAnswer : resolveAnswerType(rawAnswer);
 		returnVal = answerHandler(answer, count);
 
 		if (returnVal instanceof Promise) {
@@ -64,17 +65,17 @@ function resolveAnswerType (rawAnswer) {
 function yesNoBoolean (str) {
 	const len = str.length;
 
-	if (len === 1) {
+	if (len === 1) { // Y/N
 		const firstChar = str[0];
 		const upperFirst = firstChar.toUpperCase();
 		if (upperFirst === 'Y') return true;
 		if (upperFirst === 'N') return false;
 	}
-	else if (len === 2) {
+	else if (len === 2) { // No
 		const upperStr = str.toUpperCase();
 		if (upperStr === 'NO') return false;
 	}
-	else if (len === 3) {
+	else if (len === 3) { // Yes
 		const upperStr = str.toUpperCase();
 		if (upperStr === 'YES') return true;
 	}

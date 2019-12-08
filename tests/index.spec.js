@@ -166,6 +166,32 @@ describe('askUser\n  -------', () => {
 					expect(calls.length).to.equal(2);
 				});
 			});
+
+			describe('strOnly', () => {
+				it('disables auto type conversion for numbers & booleans', async () => {
+					const opts = {strOnly: true};
+
+					setAnswerTimeout(stdin, 'yes', 10);
+					const answer1 = await askUser(question, opts);
+					expect(answer1).to.equal('yes');
+
+					setAnswerTimeout(stdin, 'Y', 10);
+					const answer2 = await askUser(question, opts);
+					expect(answer2).to.equal('Y');
+
+					setAnswerTimeout(stdin, 'no', 10);
+					const answer3 = await askUser(question, opts);
+					expect(answer3).to.equal('no');
+
+					setAnswerTimeout(stdin, 'N', 10);
+					const answer4 = await askUser(question, opts);
+					expect(answer4).to.equal('N');
+
+					setAnswerTimeout(stdin, '42', 10);
+					const answer5 = await askUser(question, opts);
+					expect(answer5).to.equal('42');
+				});
+			});
 		});
 
 		describe('[2] Function - Answer Handler', () => {
@@ -366,7 +392,7 @@ describe('askUser\n  -------', () => {
 	});
 
 	describe('Type Conversion', () => {
-		it('converts string-numbers to numbers', async () => {
+		it('converts string-numbers into numbers', async () => {
 			setAnswerTimeout(stdin, '42', 10);
 
 			const answer = await askUser(question);
@@ -374,14 +400,38 @@ describe('askUser\n  -------', () => {
 			expect(answer).to.equal(42);
 		});
 
-		it('converts yes/no to booleans', async () => {
-			setAnswerTimeout(stdin, 'yes', 10);
-			const answerYes = await askUser(question);
-			expect(answerYes).to.equal(true);
+		it('converts yes/no into booleans', async () => {
+			setAnswerTimeout(stdin, 'y', 10);
+			const answer1 = await askUser(question);
+			expect(answer1).to.equal(true);
 
-			setAnswerTimeout(stdin, 'no', 30);
-			const answerNo = await askUser(question);
-			expect(answerNo).to.equal(false);
+			setAnswerTimeout(stdin, 'Y', 10);
+			const answer2 = await askUser(question);
+			expect(answer2).to.equal(true);
+
+			setAnswerTimeout(stdin, 'yes', 10);
+			const answer3 = await askUser(question);
+			expect(answer3).to.equal(true);
+
+			setAnswerTimeout(stdin, 'YES', 10);
+			const answer4 = await askUser(question);
+			expect(answer4).to.equal(true);
+
+			setAnswerTimeout(stdin, 'n', 10);
+			const answer5 = await askUser(question);
+			expect(answer5).to.equal(false);
+
+			setAnswerTimeout(stdin, 'N', 10);
+			const answer6 = await askUser(question);
+			expect(answer6).to.equal(false);
+
+			setAnswerTimeout(stdin, 'no', 10);
+			const answer7 = await askUser(question);
+			expect(answer7).to.equal(false);
+
+			setAnswerTimeout(stdin, 'NO', 10);
+			const answer8 = await askUser(question);
+			expect(answer8).to.equal(false);
 		});
 	});
 
