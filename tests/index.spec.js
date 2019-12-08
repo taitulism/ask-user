@@ -23,6 +23,7 @@ const OK = 'OK';
 const THE_ULTIMATE_QUESTION = 'What is the answer to life, the universe and everything?';
 const question = `    ${THE_ULTIMATE_QUESTION}\n    > `;
 const correctAnswer = '42';
+const correctAnswerInt = parseInt(correctAnswer, 10);
 const wrongAnswer1 = 'God';
 const wrongAnswer2 = '41';
 const wrongAnswer3 = '43';
@@ -153,7 +154,7 @@ describe('askUser\n  -------', () => {
 
 					const onAnswer = (answer) => {
 						spy(answer);
-						return (answer === correctAnswer);
+						return (answer === correctAnswerInt);
 					};
 
 					const opts = {onAnswer};
@@ -161,7 +162,7 @@ describe('askUser\n  -------', () => {
 
 					const calls = spy.getCalls();
 					expect(calls[0].args[0]).to.equal(wrongAnswer1);
-					expect(calls[1].args[0]).to.equal(correctAnswer);
+					expect(calls[1].args[0]).to.equal(correctAnswerInt);
 					expect(calls.length).to.equal(2);
 				});
 			});
@@ -190,16 +191,16 @@ describe('askUser\n  -------', () => {
 
 				await askUser(question, (answer) => {
 					spy(answer);
-					return (answer === correctAnswer);
+					return (answer === correctAnswerInt);
 				});
 
 				const calls = spy.getCalls();
 
 				expect(calls.length).to.equal(4);
 				expect(calls[0].args[0]).to.equal(wrongAnswer1);
-				expect(calls[1].args[0]).to.equal(wrongAnswer2);
-				expect(calls[2].args[0]).to.equal(wrongAnswer3);
-				expect(calls[3].args[0]).to.equal(correctAnswer);
+				expect(calls[1].args[0]).to.equal(parseInt(wrongAnswer2, 10));
+				expect(calls[2].args[0]).to.equal(parseInt(wrongAnswer3, 10));
+				expect(calls[3].args[0]).to.equal(correctAnswerInt);
 			});
 
 			it('overrides `opts.onAnswer` alias if both exists', async () => {
@@ -210,12 +211,12 @@ describe('askUser\n  -------', () => {
 
 				const optsOnAnswer = (answer) => {
 					spy(answer);
-					return (answer === correctAnswer);
+					return (answer === correctAnswerInt);
 				};
 
 				const argOnAnswer = (answer, count) => {
 					spy(count);
-					return (answer === correctAnswer);
+					return (answer === correctAnswerInt);
 				};
 
 				const opts = {onAnswer: optsOnAnswer};
@@ -244,11 +245,11 @@ describe('askUser\n  -------', () => {
 
 				expect(spy).to.be.calledTwice;
 				expect(calls[0].args[0]).to.equal(wrongAnswer1);
-				expect(calls[1].args[0]).to.equal(correctAnswer);
-				expect(answer).to.equal(correctAnswer);
+				expect(calls[1].args[0]).to.equal(correctAnswerInt);
+				expect(answer).to.equal(correctAnswerInt);
 			});
 
-			it('handles answerHandler thrown error', () => {
+			it('handles thrown error', () => {
 				setAnswerTimeout(stdin, wrongAnswer1, 10);
 				const errMsg = 'did you get it?';
 
@@ -261,7 +262,7 @@ describe('askUser\n  -------', () => {
 				});
 			});
 
-			it('handles answerHandler promise rejection', () => {
+			it('handles promise rejection', () => {
 				setAnswerTimeout(stdin, wrongAnswer1, 10);
 				const errMsg = 'did you get it?';
 
@@ -348,7 +349,7 @@ describe('askUser\n  -------', () => {
 					expect(answer).to.equal(OK.toLowerCase());
 				});
 
-				it('when return null or undefined, exit with `null` even if has more tries left', async () => {
+				it('when return null or undefined, exit with `null` immediately', async () => {
 					setAnswerTimeout(stdin);
 					let keepCount;
 
@@ -364,13 +365,33 @@ describe('askUser\n  -------', () => {
 		});
 	});
 
+	describe('Type Conversion', () => {
+		it('converts string-numbers to numbers', async () => {
+			setAnswerTimeout(stdin, '42', 10);
+
+			const answer = await askUser(question);
+
+			expect(answer).to.equal(42);
+		});
+
+		it('converts yes/no to booleans', async () => {
+			setAnswerTimeout(stdin, 'yes', 10);
+			const answerYes = await askUser(question);
+			expect(answerYes).to.equal(true);
+
+			setAnswerTimeout(stdin, 'no', 30);
+			const answerNo = await askUser(question);
+			expect(answerNo).to.equal(false);
+		});
+	});
+
 	describe('Return', () => {
-		it('returns a promise that resolves to the user\'s answer', async () => {
+		it('returns a promise that resolves with the user\'s answer', async () => {
 			setAnswerTimeout(stdin, correctAnswer);
 
 			const answer = await askUser(question);
 
-			expect(answer).to.equal(correctAnswer);
+			expect(answer).to.equal(correctAnswerInt);
 		});
 	});
 });
