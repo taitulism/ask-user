@@ -167,9 +167,9 @@ describe('askUser\n  -------', () => {
 				});
 			});
 
-			describe('strOnly', () => {
+			describe('convert', () => {
 				it('disables auto type conversion for numbers & booleans', async () => {
-					const opts = {strOnly: true};
+					const opts = {convert: false};
 
 					setAnswerTimeout(stdin, 'yes', 10);
 					const answer1 = await askUser(question, opts);

@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop */
+/* eslint-disable no-await-in-loop, max-statements */
 /* eslint no-magic-numbers: ["error", { "ignore": [0,1,2,3] }] */
 
 const {createInterface} = require('readline');
@@ -6,6 +6,7 @@ const resolveArgs = require('./resolve-args');
 
 async function askUser (...args) {
 	const [question, opts, limit, answerHandler] = resolveArgs(...args);
+	const convert = opts.convert !== false;
 
 	const readline = createInterface({
 		input: opts.stdin || process.stdin,
@@ -19,7 +20,7 @@ async function askUser (...args) {
 	while (!isDone) {
 		count++;
 		rawAnswer = await asyncPrompt(question, readline);
-		answer = opts.strOnly ? rawAnswer : resolveAnswerType(rawAnswer);
+		answer = convert ? resolveAnswerType(rawAnswer) : rawAnswer;
 		returnVal = answerHandler(answer, count);
 
 		if (returnVal instanceof Promise) {
