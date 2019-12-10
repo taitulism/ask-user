@@ -11,7 +11,7 @@
       "dev": "mocha ./tests --watch",
       "test": "mocha ./tests",
       "lint": "eslint ./index.js ./src ./tests",
-      "check": "npm run lint && npm test",
+      "check": "npm run lint && npm test -- -reporter landing",
       "play": "node ./playground/play.js",
       "preversion": "npm run check",
       "postversion": "git push && git push --tags"
