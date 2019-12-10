@@ -74,17 +74,15 @@ const finalAnswer = askUser(question, onAnswer)
 If you return a truthy value other than a boolean `true`, it will be the final answer.
 This way your answer-handler could also function as your answer parser/sanitizer/manipulator:
 ```js
-const question = 'How old are you?';
+const question = 'What is your name?';
+// user types: " John "
+
 const onAnswer = (answer) => {
-    const age = parseInt(answer, 10)
-    if (age < 21) {
-        return false;
-    }
-    else {
-        return true // --> final answer will be a String
-        // or:
-        return age; // --> final answer will be a Number
-    } 
+    const trimmed = answer.trim();
+
+    return trimmed; // final answer: "John"
+    // vs.
+    return true;    // final answer: " John "
 }
 
 const finalAnswer = await askUser(question, onAnswer)
@@ -116,13 +114,13 @@ const asynchandler = (answer) => {
         setTimeout(() => {
             if (condition) resolve(true)
             else resolve(false)
-        }, 150)
+        }, 1000)
     })
 }
 const answer = await askUser(question, asynchandler)
 ```
 
-### **Exceptions and Rejections**
+### **Exceptions and Promise-Rejections**
 Throwing exceptions (or rejecting the promise) from within the answer-handler will bubble up for you to catch:
 ```js
 
@@ -130,8 +128,8 @@ try {
     const answer = await askUser(question, () => {
         const err = new Error("I'm too old for this")
 
-        throw err;
-        // or
+        throw err
+        // or:
         return new Promise((resolve, reject) => {
             reject(err)
         })
@@ -166,7 +164,7 @@ const answer = await askUser(question, {
     onAnswer: (guessColor) => (guessColor === 'blue')
 })
 ```
-> If you pass in both `onAnswer` argument and `onAnswer` option, the argument will take precedence.
+> If you pass in both onAnswer-*argument* and onAnswer-*option*, the argument will take precedence.
 
 ### **limit**
 You can utilize the `limit` functionality with the `options` object too:
@@ -179,11 +177,12 @@ const answer = await askUser(question, {
 > Limiting the number of tries should come with an answer-handler or it will be ignored.
 
 ### **convert**
-`askUser` auto converts answers to numbers and booleans when it is possible.
+All inputs are strings by default. `askUser` auto converts answers into numbers and booleans when possible.
 
-An answer of `'42'` (string) will become `42` (number).  
-`'y','Y','Yes','YES'` become `true`.  
-`'n','N','No','NO'` become `false`.
+* `'42'` (string) - becomes `42` (number).  
+* `'y' / 'Yes'` - becomes `true`.  
+* `'n' / 'No'` - becomes `false`.
+> Case insensitive
 
 You can disable this behavior with this option:
 ```js
@@ -197,7 +196,7 @@ const answer2 = await askUser(question);
 
 ```
 
-### **stdout & stdin**
+### **stdin & stdout**
 By default `askUser` sends the question to the `process.stdout` and waits for the answer from `process.stdin`. You can pass other streams using the options object.
 ```js
 const opts = {
