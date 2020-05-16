@@ -10,15 +10,18 @@ module.exports = function resolveArgs (...args) {
 		typesMap.set(argType, args[i]);
 	});
 
-	const rawQuestion = typesMap.get('string');
-	const question = rawQuestion
-		? normalizeTralingSpace(rawQuestion)
-		: DEFAULT_QUESTION;
-
 	const options = typesMap.get('object') || {};
 	const limit = typesMap.get('number') || options.limit || 0;
 	const isRequired = typesMap.get('boolean') || options.isRequired || false;
 	const answerHandler = typesMap.get('function') || options.onAnswer || (() => (true));
+	const rawQuestion = typesMap.get('string');
+
+	if (!rawQuestion) {
+		return [DEFAULT_QUESTION, options, limit, isRequired, answerHandler];
+	}
+
+	const shouldAddTrailingSpace = options.trailingSpace !== false;
+	const question = shouldAddTrailingSpace ? normalizeTralingSpace(rawQuestion) : rawQuestion;
 
 	return [question, options, limit, isRequired, answerHandler];
 };

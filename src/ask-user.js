@@ -6,7 +6,7 @@ const resolveArgs = require('./resolve-args');
 
 async function askUser (...args) {
 	const [question, opts, limit, isRequired, answerHandler] = resolveArgs(...args);
-	const convert = opts.convert !== false;
+	const shouldConvert = opts.convert !== false;
 
 	const readline = createInterface({
 		input: opts.stdin || process.stdin,
@@ -20,7 +20,7 @@ async function askUser (...args) {
 	while (!isDone) {
 		count++;
 		rawAnswer = await asyncPrompt(question, readline);
-		answer = convert ? resolveAnswerType(rawAnswer) : rawAnswer;
+		answer = shouldConvert ? resolveAnswerType(rawAnswer) : rawAnswer;
 
 		if (isRequired && answer === '') {
 			returnVal = false;

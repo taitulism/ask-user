@@ -46,7 +46,8 @@ askUser(onAnswer, question, limit)
 ``` 
 
 ## **Question**
-Very self explanatory. The string that precedes the user input. A single space is added after the question if last character is not a space.
+Very self explanatory. The string that precedes the user input. For readability, the question is separated from the answer with a space. You can disable this behavior by setting the `trailingSpace` option to false.
+
 
 ## **onAnswer**
 A function that is used as the answer handler. It gets called when the user answers the question and hits "Enter". 
@@ -184,12 +185,13 @@ if (answer == null) {
 
 ## **Options**
 An object with the following possible properties:
-* onAnswer
-* limit
-* isRequired
-* convert
-* stdin
-* stdout
+* `onAnswer`
+* `limit`
+* `isRequired`
+* `convert`
+* `trailingSpace`
+* `stdin`
+* `stdout`
 
 You can use `onAnswer`, `limit` and `isRequired`  via the `options` object too.
 > **NOTE: If you pass in an argument and its alias option, the argument will take precedence.**
@@ -218,6 +220,12 @@ const answer1 = await askUser(question);
 
 const answer2 = await askUser(question, {convert: false});
 // answer2 === 'Yes'
+```
+
+### **trailingSpace**
+By default, a single space is added after the question if the last character is not a space or a newline. You can disable this behavior by setting the `trailingSpace` option to false.
+```js
+await askUser(question, {trailingSpace: false});
 ```
 
 ### **stdin & stdout**

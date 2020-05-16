@@ -192,6 +192,22 @@ describe('askUser\n  -------', () => {
 					expect(answer5).to.equal('42');
 				});
 			});
+
+			describe('trailingSpace', () => {
+				it('disables added space to question', async () => {
+					setAnswerTimeout(stdin);
+
+					let text = '';
+					stdout.on('data', (str) => {
+						text += str;
+					});
+
+					const question = 'is it?';
+
+					await askUser(question, {trailingSpace: false});
+					expect(text).to.equal(question);
+				});
+			});
 		});
 
 		describe('Boolean - Is Answer Required ', () => {
