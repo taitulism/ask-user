@@ -41,10 +41,10 @@ describe('askUser\n  -------', () => {
 		stdin = new Stream();
 		stdout = new Stream();
 		askUser = (...args) => {
-			const [question, opts, limit, answerHandler] = resolveArgs(...args);
+			const [question, opts, limit, isRequired, answerHandler] = resolveArgs(...args);
 			opts.stdin = stdin;
 			opts.stdout = stdout;
-			return realAskUser(question, opts, limit, answerHandler);
+			return realAskUser(question, opts, limit, isRequired || answerHandler);
 		};
 	});
 
@@ -58,7 +58,7 @@ describe('askUser\n  -------', () => {
 	});
 
 	describe('Arguments:', () => {
-		describe('[0] String - Question', () => {
+		describe('String - Question', () => {
 			it('sends the question to `stdout`', async () => {
 				setAnswerTimeout(stdin);
 
@@ -116,7 +116,7 @@ describe('askUser\n  -------', () => {
 			});
 		});
 
-		describe('[1] Object - Options', () => {
+		describe('Object - Options', () => {
 			describe('stdin', () => {
 				it('uses a given stream as `stdin` (default is `process.stdin`)', () => {});
 			});
@@ -140,7 +140,7 @@ describe('askUser\n  -------', () => {
 						return (answer === correctAnswer);
 					});
 
-					expect(spy.callCount).to.equal(3);
+					expect(spy).to.be.calledThrice;
 					expect(answer).to.be.null;
 				});
 			});
@@ -194,7 +194,30 @@ describe('askUser\n  -------', () => {
 			});
 		});
 
-		describe('[2] Function - Answer Handler', () => {
+		describe('Boolean - Is Answer Required ', () => {
+			it('repeats question until any answer', async () => {
+				setAnswerTimeout(stdin, '', 10);
+				setAnswerTimeout(stdin, '', 20);
+				setAnswerTimeout(stdin, OK, 30);
+
+				const answer = await askUser(question, true);
+
+				expect(answer).to.equal(OK);
+			});
+
+			it('ignores answerHandler when true', async () => {
+				setAnswerTimeout(stdin, '', 10);
+				setAnswerTimeout(stdin, '', 20);
+				setAnswerTimeout(stdin, OK, 30);
+
+				const spy = sinon.spy();
+				await askUser(question, true, spy);
+
+				expect(spy).to.not.called;
+			});
+		});
+
+		describe('Function - Answer Handler', () => {
 			it('gets called on answer', async () => {
 				setAnswerTimeout(stdin);
 				const spy = sinon.spy();

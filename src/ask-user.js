@@ -5,7 +5,7 @@ const {createInterface} = require('readline');
 const resolveArgs = require('./resolve-args');
 
 async function askUser (...args) {
-	const [question, opts, limit, answerHandler] = resolveArgs(...args);
+	const [question, opts, limit, isRequired, answerHandler] = resolveArgs(...args);
 	const convert = opts.convert !== false;
 
 	const readline = createInterface({
@@ -21,7 +21,13 @@ async function askUser (...args) {
 		count++;
 		rawAnswer = await asyncPrompt(question, readline);
 		answer = convert ? resolveAnswerType(rawAnswer) : rawAnswer;
-		returnVal = answerHandler(answer, count);
+
+		if (isRequired && answer === '') {
+			returnVal = false;
+		}
+		else {
+			returnVal = answerHandler(answer, count);
+		}
 
 		if (returnVal instanceof Promise) {
 			returnVal = await returnVal;
