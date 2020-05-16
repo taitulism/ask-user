@@ -1,7 +1,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.org/taitulism/ask-user.svg?branch=master)](https://travis-ci.org/taitulism/ask-user)
 
-**Ask-User**
+**Ask User**
 ============
 A simple CLI prompt to get user input.
 
@@ -14,40 +14,54 @@ $ npm install ask-user
 # Basic Usage
 ### **Promise style**
 ```js
-const askUser = require('ask-user');
-
 askUser('Are you sure?').then((answer) => {
-    // do something with `answer`...
+    console.log(answer);
 });
 ```
 
 ### **Async/Await**
 ```js
-const askUser = require('ask-user');
-
 (async () => {
     const answer = await askUser('Are you sure?');
-    
-    // do something with `answer`...
+    console.log(answer);
 })();
 ```
 
 > When called with no question it defaults to: `'Press "ENTER" to continue... '`
 
-# Answer Handler
-
-By default, a question is only asked once, unless you pass in an answer-handler. 
+# Arguments
+The `askUser` function accepts up to 5 argument and their order doesn't matter. It is possible because argument types are all unique:  
+* **question** - string  
+* **options** - object  
+* **onAnswer** - function  
+* **limit** - number  
+* **isRequired** - boolean  
 
 ```js
-const answer = await askUser('Are we there yet?', answerHandler)
-```
->**This handler is NOT the final callback.**
+// anything goes:
+askUser(question, opts)
+askUser(opts, limit, question, isRequired)
+askUser(onAnswer, question, limit)
+// etc.
+``` 
 
-This function will get called when the user answers the question. Meaning, the user hits "Enter".
+## **Question**
+Very self explanatory. The string that precedes the user input. A single space is added after the question if last character is not a space.
+
+## **onAnswer**
+A function that is used as the answer handler. It gets called when the user answers the question and hits "Enter". 
+
+> ### **This is NOT the final callback.**
+
+The handler's main purpose is for validating the user input. An invalid input will re-prompt the user with the same question until validation (or `Ctrl+C`). 
+
+You can also use it to manipulate (trim, escape, sanitize etc.) an answer before returning it.  
+
+
 
 ### **Arguments**
 * `answer` \<String> - the user's answer
-* `count` \<Number> - the try number. Starts with 1.
+* `count` \<Number> - the number of times the user was prompted with the question. Starts with 1.
 ```js
 const question = 'Are we there yet?';
 
@@ -56,68 +70,70 @@ const finalAnswer = await askUser(question, (answer, count) => {
 })
 ```
 
-### **Handler Return Value**
-The handler's main purpose is for validating the user input.
-An invalid input will re-prompt the user with the same question until validation (or `Ctrl+c`). 
-
-You can also use it to manipulate (trim, escape, sanitize etc.) an answer before returning it.  
-If you return `false`, the user will be prompted again with the same question.  
-If you return `true`, current answer will be returned as the final answer.  
+### **Return Value**
+* Return `false` if you don't accept the answer. The user will be prompted again with the same question.  
+* Return `true` if you accept the user answer. Current answer will be returned as the final answer.  
+* Return any truthy value (other than a boolean `true`) to be used as the final answer.  
+* Return `null` or `undefined` to cancel question. Prompt will exit immediately and final answer will be `null`. Could be used as a kind of a cancel/exit.
 
 ```js
-// The question will be repetitively re-asked until the user types "yes"
-const onAnswer = (answer) => (answer === 'yes')
+// The question will be repetitively re-asked until the user types "I DO!"
+const finalAnswer = askUser('Will you marry me?', (answer) => {
+    return answer === 'I DO!';
+});
 
-const finalAnswer = askUser(question, onAnswer)
+console.log(finalAnswer) // I DO!
 ```
 
-If you return a truthy value other than a boolean `true`, it will be the final answer.
-This way your answer-handler could also function as your answer parser/sanitizer/manipulator:
+The handler could also function as your answer parser/sanitizer/manipulator:
 ```js
 const question = 'What is your name?';
-// user types: " John "
+// user types: "  John " with spaces
 
 const onAnswer = (answer) => {
     const trimmed = answer.trim();
 
     return trimmed; // final answer: "John"
     // vs.
-    return true;    // final answer: " John "
+    return true;    // final answer: "  John "
 }
 
 const finalAnswer = await askUser(question, onAnswer)
 ```
-Another use of a truthy return value could be a default value:
+
+### **Default Answer**
+Another use of returning a value could be a default value:
 ```js
 const question = 'Which branch to pull from?';
 const onAnswer = (branch) => {
-    if (!branch) return 'master'; // return default when answer is empty
+    if (!branch) return 'master'; // when the answer is empty
 
     return branch.trim(); // return clean branch name
 }
 
 const finalAnswer = await askUser(question, onAnswer)
 ```
-But you don't need a handler for a simple default:
+But you don't need a handler for a simple default. You can simply use an `OR` operator:
 ```js
+const question = 'Which branch to pull from?';
 const finalAnswer = await askUser(question) || 'master';
 ```
 
-If you return `null` or `undefined`, prompt will exit immediately and final answer will be `null`. Could be used as a kind of a cancel/exit
 
 
 ### **Async Validation**
 Async handler is also supported. Just make sure to return a promise.
 ```js
-const asynchandler = (answer) => {
+const asyncHandler = (answer) => {
     return new Promise((resolve) => {
         setTimeout(() => {
             if (condition) resolve(true)
             else resolve(false)
         }, 1000)
-    })
+    });
 }
-const answer = await askUser(question, asynchandler)
+
+const answer = await askUser(question, asyncHandler)
 ```
 
 ### **Exceptions and Promise-Rejections**
@@ -141,7 +157,16 @@ catch (err) {
 ```
 
 
-### **Limit**
+
+## **Required Answer**
+If you require an answer for your question you can pass in a boolean `true`. The question will be re-asked if no answer provided.
+```js
+const answer = await askUser('Username:', true);
+```
+
+
+
+## **Limit**
 You can set a maximum number of tries (answer validation fails). The final answer will be set to `null` when limit exceeded.
 ```js
 const question = 'You have 3 tries to guess my favorite color:';
@@ -155,45 +180,44 @@ if (answer == null) {
 ```
 
 
-# Options
 
-### **onAnswer**
-You can use the answer-handler via the `options` object:
-```js
-const answer = await askUser(question, {
-    onAnswer: (guessColor) => (guessColor === 'blue')
-})
-```
-> If you pass in both onAnswer-*argument* and onAnswer-*option*, the argument will take precedence.
 
-### **limit**
-You can utilize the `limit` functionality with the `options` object too:
+## **Options**
+An object with the following possible properties:
+* onAnswer
+* limit
+* isRequired
+* convert
+* stdin
+* stdout
+
+You can use `onAnswer`, `limit` and `isRequired`  via the `options` object too.
+> **NOTE: If you pass in an argument and its alias option, the argument will take precedence.**
 ```js
 const answer = await askUser(question, {
     limit: 3,
+    isRequired: true,
     onAnswer: (guessColor) => (guessColor === 'blue')
 });
 ```
-> Limiting the number of tries should come with an answer-handler or it will be ignored.
 
 ### **convert**
-All inputs are strings by default. `askUser` auto converts answers into numbers and booleans when possible.
+All inputs are strings by default. `askUser` automatically converts answers into numbers and booleans when possible.
 
 * `'42'` (string) - becomes `42` (number).  
 * `'y' / 'Yes'` - becomes `true`.  
 * `'n' / 'No'` - becomes `false`.
 > Case insensitive
 
-You can disable this behavior with this option:
+You can disable this behavior by setting the `convert` option to `false`:
 ```js
 // 'Yes' for both questions:
 
-const answer1 = await askUser(question, {convert: false});
-// answer1 === 'Yes'
+const answer1 = await askUser(question);
+// answer1 === true
 
-const answer2 = await askUser(question);
-// answer2 === true
-
+const answer2 = await askUser(question, {convert: false});
+// answer2 === 'Yes'
 ```
 
 ### **stdin & stdout**
@@ -206,22 +230,3 @@ const opts = {
 
 const answer = await askUser(question, opts)
 ```
-&nbsp;
-
------------------------------------------------------------------------
-&nbsp;
-
-> **NOTE:** `askUser` function accepts up to 4 argument and their order doesn't matter. It is possible because argument types are all unique:  
-* **question** - string  
-* **options** - object  
-* **onAnswer** - function  
-* **limit** - number  
-
-```js
-// anything goes:
-askUser(question, opts)
-askUser(opts, limit, question)
-askUser(onAnswer, question, limit)
-askUser(limit, onAnswer, question, opts)
-``` 
-
