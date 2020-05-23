@@ -209,6 +209,39 @@ describe('askUser\n  -------', () => {
 				});
 			});
 
+			describe('timeout', function () {
+				it('expires the prompt after `timeout` seconds', function (done) {
+					let answer;
+					const clock = sinon.useFakeTimers();
+
+					// before timeout
+					setTimeout(() => {
+						clock.tick(501);
+						expect(answer).to.be.undefined;
+					}, 500);
+
+					// after timeout
+					setTimeout(() => {
+						expect(answer).to.be.null;
+						clock.restore();
+						done();
+					}, 1500);
+
+					const startTime = Date.now();
+
+					askUser(question, {timeout: 1}).then((ans) => {
+						// Timeout!
+						const endTime = Date.now();
+						const timePassed = endTime - startTime;
+						answer = ans;
+						clock.tick(600);
+						return expect(timePassed).to.be.above(900).and.below(1100);
+					});
+
+					clock.tick(501);
+				});
+			});
+
 			describe('hidden', () => {
 				it.skip('TODO: mask the user answer (for passwords)', () => {
 					// Yes it is!
