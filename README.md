@@ -188,6 +188,7 @@ An object with the following possible properties:
 * `onAnswer`
 * `limit`
 * `isRequired`
+* `hidden`
 * `convert`
 * `trailingSpace`
 * `stdin`
@@ -201,6 +202,16 @@ const answer = await askUser(question, {
     isRequired: true,
     onAnswer: (guessColor) => (guessColor === 'blue')
 });
+```
+
+### **hidden**
+Set to `true` to mask user input with stars. Default is `false`.
+```js
+const answer = await askUser('Enter Password:', {hidden: true});
+// User types: `1234`
+// User sees:  `****`
+
+// answer === 1234
 ```
 
 ### **convert**

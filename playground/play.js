@@ -2,17 +2,17 @@
 
 const askUser = require('../');
 
+/*
+	This a manual test for the "hidden" option that I havn't figured out how to test yet.
+	Type a password, test using "backspace" and "delete" to fix the answer and continue typing.
+ */
 (async () => {
 	try {
-		const answer = await askUser('Do you?', 10, true, (ans) => {
-			if (ans === true) return true;
-			console.log('nope');
-			return false;
-		}) || 'Yes';
+		const answer = await askUser('Type Password?', {hidden: true});
 
-		console.log('the answer is:', answer);
+		console.log('The answer is:', answer);
 
-		setTimeout(() => {}, 2000);
+		// setTimeout(() => {}, 2000);
 	}
 	catch (err) {
 		console.error('ARRRGH');

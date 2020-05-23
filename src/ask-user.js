@@ -1,8 +1,19 @@
-/* eslint-disable no-await-in-loop, max-statements */
-/* eslint no-magic-numbers: ["error", { "ignore": [0,1,2,3] }] */
+/* eslint-disable
+	no-await-in-loop,
+	max-lines-per-function,
+	max-statements,
+*/
 
 const {createInterface} = require('readline');
 const resolveArgs = require('./resolve-args');
+const MASK = '*';
+const MINUS_ONE_CHAR = -1;
+const FIRST_CHAR = 0;
+const ONE_CHAR = 1;
+const TWO_CHARS = 2;
+const THREE_CHARS = 3;
+const YES = 'YES';
+const NO = 'NO';
 
 async function askUser (...args) {
 	const [question, opts, limit, isRequired, answerHandler] = resolveArgs(...args);
@@ -12,6 +23,40 @@ async function askUser (...args) {
 		input: opts.stdin || process.stdin,
 		output: opts.stdout || process.stdout,
 	});
+
+	let prevLen = 0;
+	let first = true;
+
+	if (opts.hidden && readline.output.isTTY) {
+		// eslint-disable-next-line no-underscore-dangle
+		readline._writeToOutput = function _writeToOutput (str) {
+			const currentAnswer = readline.line;
+			const lineLen = currentAnswer.length;
+
+			if (first || isNewline(str)) {
+				first = false;
+				return readline.output.write(str);
+			}
+
+			if (str.startsWith(question)) {
+				// User pressed "Backspace" or "Delete"
+				const text = question + MASK.repeat(lineLen);
+				readline.output.write(text);
+			}
+			else {
+				const diff = lineLen - prevLen;
+
+				if (diff === 1) {
+					readline.output.write(MASK);
+				}
+				else if (diff === MINUS_ONE_CHAR) {
+					readline.output.moveCursor(MINUS_ONE_CHAR);
+					readline.output.clearLine(1);
+				}
+			}
+			prevLen = lineLen;
+		};
+	}
 
 	let rawAnswer, answer, returnVal;
 	let count = 0;
@@ -71,23 +116,29 @@ function resolveAnswerType (rawAnswer) {
 
 function yesNoBoolean (str) {
 	const len = str.length;
+	const upperStr = str.toUpperCase();
 
-	if (len === 1) { // Y/N
-		const firstChar = str[0];
-		const upperFirst = firstChar.toUpperCase();
-		if (upperFirst === 'Y') return true;
-		if (upperFirst === 'N') return false;
+	// Y/N
+	if (len === ONE_CHAR) {
+		const firstChar = upperStr[FIRST_CHAR];
+		if (firstChar === 'Y') return true;
+		if (firstChar === 'N') return false;
 	}
-	else if (len === 2) { // No
-		const upperStr = str.toUpperCase();
-		if (upperStr === 'NO') return false;
+	// No
+	else if (len === TWO_CHARS) {
+		if (upperStr === NO) return false;
 	}
-	else if (len === 3) { // Yes
-		const upperStr = str.toUpperCase();
-		if (upperStr === 'YES') return true;
+	// Yes
+	else if (len === THREE_CHARS) {
+		if (upperStr === YES) return true;
 	}
 
 	return str;
+}
+
+const newlineChars = ['\n', '\r\n', '\r'];
+function isNewline (char) {
+	return newlineChars.includes(char);
 }
 
 module.exports = askUser;

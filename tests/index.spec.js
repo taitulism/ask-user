@@ -208,6 +208,37 @@ describe('askUser\n  -------', () => {
 					expect(text).to.equal(question);
 				});
 			});
+
+			describe('hidden', () => {
+				it.skip('TODO: mask the user answer (for passwords)', () => {
+					// Yes it is!
+					setTimeout(() => stdin.emit('data', 'Yes'), 10);
+					setTimeout(() => stdin.emit('data', ' iR'), 20); // R is a typo
+					setTimeout(() => stdin.emit('data', '\b'), 30);  // \b = backspace
+					setTimeout(() => stdin.emit('data', 't '), 40);
+					// eslint-disable-next-line prefer-template
+					setTimeout(() => stdin.emit('data', 'is!' + EOL), 50);
+
+					let text = '';
+					stdin.on('data', (str) => {
+						text += str;
+					});
+					stdout.on('data', (str) => {
+						text += str;
+					});
+
+					const question = 'is it?';
+					const expected = 'is it? Yes it is!';
+
+					// TODO: How to test a TTY stdout?
+					// const expected = 'is it? **********';
+
+					return askUser(question, {hidden: true}).then((answer) => {
+						expect(text).to.equal(expected);
+						return expect(answer).to.equal('Yes it is!');
+					});
+				});
+			});
 		});
 
 		describe('Boolean - Is Answer Required ', () => {
