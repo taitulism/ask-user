@@ -1,8 +1,4 @@
-/* eslint-disable
-	no-empty-function,
-	object-property-newline,
-	max-lines
-*/
+/* eslint-disable max-lines */
 
 const {EOL} = require('os');
 const {PassThrough: Stream} = require('stream');
@@ -58,7 +54,7 @@ describe('askUser\n  -------', () => {
 	});
 
 	describe('Arguments:', () => {
-		describe('String - Question', () => {
+		describe('Question - String', () => {
 			it('sends the question to `stdout`', async () => {
 				setAnswerTimeout(stdin);
 
@@ -116,13 +112,13 @@ describe('askUser\n  -------', () => {
 			});
 		});
 
-		describe('Object - Options', () => {
+		describe('Options - Object', () => {
 			describe('stdin', () => {
-				it.skip('uses a given stream as `stdin` (default is `process.stdin`)', () => {});
+				it.skip('uses a given stream as `stdin` (default is `process.stdin`)');
 			});
 
 			describe('stdout', () => {
-				it.skip('uses a given stream as `stdout` (default is `process.stdout`)', () => {});
+				it.skip('uses a given stream as `stdout` (default is `process.stdout`)');
 			});
 
 			describe('limit', () => {
@@ -385,7 +381,6 @@ describe('askUser\n  -------', () => {
 					setTimeout(() => stdin.emit('data', ' iR'), 20); // R is a typo
 					setTimeout(() => stdin.emit('data', '\b'), 30);  // \b = backspace
 					setTimeout(() => stdin.emit('data', 't '), 40);
-					// eslint-disable-next-line prefer-template
 					setTimeout(() => stdin.emit('data', 'is!' + EOL), 50);
 
 					let text = '';
@@ -410,7 +405,7 @@ describe('askUser\n  -------', () => {
 			});
 		});
 
-		describe('Boolean - Is Answer Required ', () => {
+		describe('Is Answer Required - Boolean', () => {
 			it('repeats question until any answer', async () => {
 				setAnswerTimeout(stdin, '', 10);
 				setAnswerTimeout(stdin, '', 20);
@@ -433,7 +428,7 @@ describe('askUser\n  -------', () => {
 			});
 		});
 
-		describe('Function - Answer Handler', () => {
+		describe('Answer Handler - Function', () => {
 			it('gets called on answer', async () => {
 				setAnswerTimeout(stdin);
 				const spy = sinon.spy();
@@ -641,7 +636,7 @@ describe('askUser\n  -------', () => {
 
 		it('converts yes/no into booleans', async () => {
 			setAnswerTimeout(stdin, 'y', 10);
-			const answer1 = await askUser(question);
+			const answer1 = await askUser(question, {convert: true});
 			expect(answer1).to.equal(true);
 
 			setAnswerTimeout(stdin, 'Y', 10);
@@ -657,7 +652,7 @@ describe('askUser\n  -------', () => {
 			expect(answer4).to.equal(true);
 
 			setAnswerTimeout(stdin, 'n', 10);
-			const answer5 = await askUser(question);
+			const answer5 = await askUser(question, {convert: true});
 			expect(answer5).to.equal(false);
 
 			setAnswerTimeout(stdin, 'N', 10);

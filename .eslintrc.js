@@ -30,6 +30,8 @@ module.exports = {
 			"global-require": "off",
 			"no-new": "off",
 			"no-shadow": "off",
+			"prefer-template": "off",
+			"object-property-newline": "off",
 		},
 	}],
 	"rules": {
@@ -62,7 +64,7 @@ module.exports = {
 		"dot-location": ["error", "property"],
 		"dot-notation": "error",
 		"eol-last": "error",
-		"eqeqeq": "error",
+		"eqeqeq": ["error", "smart"],
 		"func-call-spacing": "error",
 		"func-name-matching": "error",
 		"func-names": [
@@ -136,7 +138,7 @@ module.exports = {
 		"no-duplicate-imports": "error",
 		"no-else-return": "error",
 		"no-empty-function": "error",
-		"no-eq-null": "error",
+//		"no-eq-null": "off",
 		"no-eval": "error",
 		"no-extend-native": "error",
 		"no-extra-bind": "error",

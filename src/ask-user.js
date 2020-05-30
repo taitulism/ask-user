@@ -1,8 +1,6 @@
 /* eslint-disable
-	no-await-in-loop,
 	max-lines-per-function,
 	max-statements,
-	require-atomic-updates,
 */
 
 const {createInterface} = require('readline');
@@ -32,7 +30,7 @@ function askUser (...args) {
 
 	let timeoutPromise, timeoutResolve, timeoutReject;
 	let finalResolve, finalReject;
-	let input, answer, handlerResult;
+	let input, handlerResult;
 	let timeoutRef, abortTimeout;
 	let count = 0;
 	let isDone = false;
@@ -69,10 +67,8 @@ function askUser (...args) {
 			return finish(result);
 		}
 
-		answer = null;
 		const limitExceeded = limit && count >= limit;
 
-		/* eslint-disable-next-line no-eq-null, eqeqeq */
 		if (result == null || limitExceeded) {
 			return finish(defaultAnswer);
 		}
