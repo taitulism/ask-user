@@ -303,6 +303,44 @@ describe('askUser\n  -------', () => {
 				});
 			});
 
+			describe('default', function () {
+				let clock;
+
+				beforeEach(() => {
+					clock = sinon.useFakeTimers({
+						toFake: ['setTimeout', 'clearTimeout', 'Date'],
+						// shouldAdvanceTime: true, advanceTimeDelta: 100,
+					});
+				});
+
+				afterEach(() => {
+					clock.restore();
+				});
+
+				it('is the default answer value in case of a timeout', function (done) {
+					let answer;
+
+					setTimeout(() => {
+						expect(answer).to.equal(OK);
+						done();
+					}, 1500);
+
+					const startTime = Date.now();
+
+					askUser(question, {timeout: 1, default: OK}).then((ans) => {
+						// Timeout!
+						answer = ans;
+
+						const endTime = Date.now();
+						const timePassed = endTime - startTime;
+						clock.tick(500);
+						return expect(timePassed).to.be.equal(1000);
+					});
+
+					clock.tick(1000);
+				});
+			});
+
 			describe('hidden', () => {
 				it.skip('TODO: mask the user answer (for passwords)', () => {
 					// Yes it is!

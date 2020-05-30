@@ -39,7 +39,7 @@ function askUser (...args) {
 		if (isDone) return;
 		isDone = true;
 		readline.close();
-		return timeoutResolve(null);
+		return timeoutResolve(opts.default || null);
 	}
 
 	function setTimer () {
