@@ -35,35 +35,24 @@ function askUser (...args) {
 	let count = 0;
 	let isDone = false;
 
-	if (opts.timeout) {
-		timeoutPromise = new Promise((resolve) => {
-			timeoutResolve = resolve;
-		});
-
-		abortTimeout = () => {
-			timeoutRef && clearTimeout(timeoutRef);
-		};
-	}
-
-	const timeoutCallback = () => {
+	function timeoutCallback () {
 		if (isDone) return;
 		isDone = true;
 		readline.close();
 		return timeoutResolve(null);
-	};
+	}
 
-	const setTimer = () => {
-		abortTimeout();
+	function setTimer () {
 		timeoutRef = setTimeout(timeoutCallback, opts.timeout * SECOND);
-	};
+	}
 
-	const finish = (finalAnswer) => {
+	function finish (finalAnswer) {
 		if (isDone) return;
 		isDone = true;
 		abortTimeout && abortTimeout();
 		readline.close();
 		return finalResolve(finalAnswer);
-	};
+	}
 
 	function handleHandlerResult (value) {
 		if (isDone) return;
@@ -82,9 +71,22 @@ function askUser (...args) {
 		}
 
 		return ask();
-	};
+	}
 
-	function asyncHandler () {
+	function answerHandlerWrapper (rawInput) {
+		opts.timeout && abortTimeout();
+		if (isDone) return;
+		count++;
+
+		input = shouldConvert ? parseInput(rawInput) : rawInput;
+
+		try {
+			handlerResult = (isRequired && input === '') ? false : answerHandler(input, count);
+		}
+		catch (err) {
+			return finalReject(err);
+		}
+
 		if (handlerResult instanceof Promise) {
 			return handlerResult.then(handleHandlerResult, err => finalReject(err));
 		}
@@ -92,27 +94,12 @@ function askUser (...args) {
 		return handleHandlerResult(handlerResult);
 	}
 
-	const ask = () => {
-		// console.log('**ASK**');
+	function ask () {
 		opts.timeout && setTimer();
-		return asyncPrompt(question, readline).then(async (rawInput) => {
-			// console.log('**INPUT**');
-			opts.timeout && abortTimeout();
-			if (isDone) return;
-			count++;
+		return asyncPrompt(question, readline).then(answerHandlerWrapper);
+	}
 
-			input = shouldConvert ? parseInput(rawInput) : rawInput;
-
-			try {
-				handlerResult = (isRequired && input === '') ? false : answerHandler(input, count);
-			}
-			catch (err) {
-				return finalReject(err);
-			}
-
-			return asyncHandler();
-		});
-	};
+	/* ──────────────────────────────────────────────────────────── */
 
 	const finalAnswerPromise = new Promise((resolve, reject) => {
 		finalResolve = resolve;
@@ -121,12 +108,22 @@ function askUser (...args) {
 		return ask();
 	});
 
-	if (timeoutPromise) {
+	if (opts.timeout) {
+		timeoutPromise = new Promise((resolve) => {
+			timeoutResolve = resolve;
+		});
+
+		abortTimeout = () => {
+			timeoutRef && clearTimeout(timeoutRef);
+		};
+
 		return Promise.race([timeoutPromise, finalAnswerPromise]);
 	}
 
 	return finalAnswerPromise;
 }
+
+
 
 function getReadlineInterface (opts) {
 	return createInterface({
@@ -137,9 +134,7 @@ function getReadlineInterface (opts) {
 
 function asyncPrompt (question, readline) {
 	return new Promise((resolve) => {
-		readline.question(question, (answer) => {
-			return resolve(answer);
-		});
+		readline.question(question, answer => resolve(answer));
 	});
 }
 
