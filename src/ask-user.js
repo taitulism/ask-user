@@ -17,6 +17,7 @@ const TWO_CHARS = 2;
 const THREE_CHARS = 3;
 const YES = 'YES';
 const NO = 'NO';
+const EMPTY = '';
 
 function askUser (...args) {
 	const [question, opts, limit, isRequired, answerHandler] = resolveArgs(...args);
@@ -39,7 +40,7 @@ function askUser (...args) {
 		if (isDone) return;
 		isDone = true;
 		readline.close();
-		return timeoutResolve(opts.default || null);
+		return timeoutResolve(opts.default || EMPTY);
 	}
 
 	function setTimer () {
@@ -54,11 +55,11 @@ function askUser (...args) {
 		return finalResolve(finalAnswer);
 	}
 
-	function handleHandlerResult (value) {
+	function handleHandlerResult (result) {
 		if (isDone) return;
 
-		if (value) {
-			answer = value === true ? input : value;
+		if (result) {
+			answer = result === true ? input : result;
 			return finish(answer);
 		}
 
@@ -66,8 +67,8 @@ function askUser (...args) {
 		const limitExceeded = limit && count >= limit;
 
 		/* eslint-disable-next-line no-eq-null, eqeqeq */
-		if (value == null || limitExceeded) {
-			return finish(null);
+		if (result == null || limitExceeded) {
+			return finish(EMPTY);
 		}
 
 		return ask();
@@ -81,7 +82,7 @@ function askUser (...args) {
 		input = shouldConvert ? parseInput(rawInput) : rawInput;
 
 		try {
-			handlerResult = (isRequired && input === '') ? false : answerHandler(input, count);
+			handlerResult = (isRequired && input === EMPTY) ? false : answerHandler(input, count);
 		}
 		catch (err) {
 			return finalReject(err);

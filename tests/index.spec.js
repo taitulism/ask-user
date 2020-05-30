@@ -141,7 +141,7 @@ describe('askUser\n  -------', () => {
 					});
 
 					expect(spy).to.be.calledThrice;
-					expect(answer).to.be.null;
+					expect(answer).to.be.empty;
 				});
 			});
 
@@ -234,7 +234,7 @@ describe('askUser\n  -------', () => {
 
 					// after timeout
 					setTimeout(() => {
-						expect(answer).to.be.null;
+						expect(answer).to.be.empty;
 						done();
 					}, 1500);
 
@@ -577,7 +577,7 @@ describe('askUser\n  -------', () => {
 					expect(answer).to.equal(OK.toLowerCase());
 				});
 
-				it('when return null or undefined, exit with `null` immediately', async () => {
+				it('when return null or undefined, exit immediately with empty string', async () => {
 					setAnswerTimeout(stdin);
 					let keepCount;
 
@@ -586,7 +586,7 @@ describe('askUser\n  -------', () => {
 						return null;
 					});
 
-					expect(answer).to.equal(null);
+					expect(answer).to.be.empty;
 					expect(keepCount).to.equal(1);
 				});
 			});
