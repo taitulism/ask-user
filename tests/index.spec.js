@@ -118,11 +118,11 @@ describe('askUser\n  -------', () => {
 
 		describe('Object - Options', () => {
 			describe('stdin', () => {
-				it('uses a given stream as `stdin` (default is `process.stdin`)', () => {});
+				it.skip('uses a given stream as `stdin` (default is `process.stdin`)', () => {});
 			});
 
 			describe('stdout', () => {
-				it('uses a given stream as `stdout` (default is `process.stdout`)', () => {});
+				it.skip('uses a given stream as `stdout` (default is `process.stdout`)', () => {});
 			});
 
 			describe('limit', () => {
@@ -338,6 +338,29 @@ describe('askUser\n  -------', () => {
 					});
 
 					clock.tick(1000);
+				});
+			});
+
+			describe('throwOnTimeout', function () {
+				it('throws en expection on timeout (no default value)', function () {
+					const clock = sinon.useFakeTimers();
+					const opts = {timeout: 1, throwOnTimeout: true};
+					const errMsg = 'No Answer Timeout (1 seconds)';
+					const promise = askUser(question, opts);
+
+					clock.tick(1000);
+
+					return promise
+						.then(
+							() => {
+								clock.restore();
+								return expect(true).to.be.false;
+							},
+							(err) => {
+								clock.restore();
+								return expect(err.message).to.equal(errMsg);
+							}
+						);
 				});
 			});
 

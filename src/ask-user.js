@@ -29,7 +29,7 @@ function askUser (...args) {
 		readline._writeToOutput = getOutputWriter(readline, question);
 	}
 
-	let timeoutPromise, timeoutResolve;
+	let timeoutPromise, timeoutResolve, timeoutReject;
 	let finalResolve, finalReject;
 	let input, answer, handlerResult;
 	let timeoutRef, abortTimeout;
@@ -40,7 +40,10 @@ function askUser (...args) {
 		if (isDone) return;
 		isDone = true;
 		readline.close();
-		return timeoutResolve(opts.default || EMPTY);
+
+		return opts.throwOnTimeout
+			? timeoutReject(new Error(`No Answer Timeout (${opts.timeout} seconds)`))
+			: timeoutResolve(opts.default || EMPTY);
 	}
 
 	function setTimer () {
@@ -110,8 +113,9 @@ function askUser (...args) {
 	});
 
 	if (opts.timeout) {
-		timeoutPromise = new Promise((resolve) => {
+		timeoutPromise = new Promise((resolve, reject) => {
 			timeoutResolve = resolve;
+			timeoutReject = reject;
 		});
 
 		abortTimeout = () => {
