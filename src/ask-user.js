@@ -28,68 +28,89 @@ function askUser (...args) {
 		readline._writeToOutput = getOutputWriter(readline, question);
 	}
 
+	let timeoutPromise, timeoutResolve;
 	let finalResolve, finalReject;
 	let input, answer, handlerResult;
-	let timeoutPromise, timeoutRef, abortTimeout;
+	let timeoutRef, abortTimeout;
 	let count = 0;
 	let isDone = false;
 
-	const setTimer = () => {
-		abortTimeout && abortTimeout();
+	if (opts.timeout) {
+		timeoutPromise = new Promise((resolve) => {
+			timeoutResolve = resolve;
+		});
 
 		abortTimeout = () => {
-			clearTimeout(timeoutRef);
+			timeoutRef && clearTimeout(timeoutRef);
 		};
+	}
 
-		timeoutPromise = new Promise((resolveTimeout) => {
-			timeoutRef = setTimeout(() => {
-				if (isDone) return;
-				isDone = true;
-				readline.close();
-				return resolveTimeout(null);
-			}, opts.timeout * SECOND);
-		});
+	const timeoutCallback = () => {
+		if (isDone) return;
+		isDone = true;
+		readline.close();
+		return timeoutResolve(null);
+	};
+
+	const setTimer = () => {
+		abortTimeout();
+		timeoutRef = setTimeout(timeoutCallback, opts.timeout * SECOND);
 	};
 
 	const finish = (finalAnswer) => {
+		if (isDone) return;
+		isDone = true;
 		abortTimeout && abortTimeout();
 		readline.close();
 		return finalResolve(finalAnswer);
 	};
 
+	function handleHandlerResult (value) {
+		if (isDone) return;
+
+		if (value) {
+			answer = value === true ? input : value;
+			return finish(answer);
+		}
+
+		answer = null;
+		const limitExceeded = limit && count >= limit;
+
+		/* eslint-disable-next-line no-eq-null, eqeqeq */
+		if (value == null || limitExceeded) {
+			return finish(null);
+		}
+
+		return ask();
+	};
+
+	function asyncHandler () {
+		if (handlerResult instanceof Promise) {
+			return handlerResult.then(handleHandlerResult, err => finalReject(err));
+		}
+
+		return handleHandlerResult(handlerResult);
+	}
+
 	const ask = () => {
+		// console.log('**ASK**');
 		opts.timeout && setTimer();
 		return asyncPrompt(question, readline).then(async (rawInput) => {
+			// console.log('**INPUT**');
+			opts.timeout && abortTimeout();
 			if (isDone) return;
 			count++;
 
 			input = shouldConvert ? parseInput(rawInput) : rawInput;
 
 			try {
-				handlerResult = (isRequired && input === '') ? false : await answerHandler(input, count);
+				handlerResult = (isRequired && input === '') ? false : answerHandler(input, count);
 			}
 			catch (err) {
 				return finalReject(err);
 			}
 
-			if (isDone) return;
-
-			if (handlerResult) {
-				isDone = true;
-				answer = handlerResult === true ? input : handlerResult;
-				return finish(answer);
-			}
-
-			answer = null;
-			const limitExceeded = limit && count >= limit;
-
-			/* eslint-disable-next-line no-eq-null, eqeqeq */
-			if (handlerResult == null || limitExceeded) {
-				isDone = true;
-				return finish(null);
-			}
-
-			return ask();
+			return asyncHandler();
 		});
 	};
 
@@ -107,9 +128,6 @@ function askUser (...args) {
 	return finalAnswerPromise;
 }
 
-
-
-
 function getReadlineInterface (opts) {
 	return createInterface({
 		input: opts.stdin || process.stdin,
@@ -119,7 +137,9 @@ function getReadlineInterface (opts) {
 
 function asyncPrompt (question, readline) {
 	return new Promise((resolve) => {
-		readline.question(question, answer => resolve(answer));
+		readline.question(question, (answer) => {
+			return resolve(answer);
+		});
 	});
 }
 

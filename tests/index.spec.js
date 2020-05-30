@@ -210,20 +210,31 @@ describe('askUser\n  -------', () => {
 			});
 
 			describe('timeout', function () {
+				let clock;
+
+				beforeEach(() => {
+					clock = sinon.useFakeTimers({
+						toFake: ['setTimeout', 'clearTimeout', 'Date'],
+						// shouldAdvanceTime: true, advanceTimeDelta: 100,
+					});
+				});
+
+				afterEach(() => {
+					clock.restore();
+				});
+
 				it('expires the prompt after `timeout` seconds', function (done) {
 					let answer;
-					const clock = sinon.useFakeTimers();
 
 					// before timeout
 					setTimeout(() => {
-						clock.tick(501);
 						expect(answer).to.be.undefined;
-					}, 500);
+						clock.tick(100);
+					}, 900);
 
 					// after timeout
 					setTimeout(() => {
 						expect(answer).to.be.null;
-						clock.restore();
 						done();
 					}, 1500);
 
@@ -231,14 +242,64 @@ describe('askUser\n  -------', () => {
 
 					askUser(question, {timeout: 1}).then((ans) => {
 						// Timeout!
+						answer = ans;
+
 						const endTime = Date.now();
 						const timePassed = endTime - startTime;
-						answer = ans;
-						clock.tick(600);
-						return expect(timePassed).to.be.above(900).and.below(1100);
+						clock.tick(500);
+						return expect(timePassed).to.be.equal(1000);
 					});
 
-					clock.tick(501);
+					clock.tick(900);
+				});
+
+				it('resets timeout on a wrong answer', function (done) {
+					setAnswerTimeout(stdin, wrongAnswer1, 900);
+					setAnswerTimeout(stdin, correctAnswer, 1800);
+
+					let answer;
+
+					// after wrong answer
+					setTimeout(() => {
+						expect(answer).to.be.undefined;
+						setImmediate(() => clock.tick(700));
+					}, 1100);
+
+					// after correct answer
+					setTimeout(() => {
+						expect(answer).to.equal(correctAnswerInt);
+						done();
+					}, 1900);
+
+					const startTime = Date.now();
+
+					const onAnswer = (ans, count) => {
+						const now = Date.now();
+						const timePassed = now - startTime;
+
+						if (count === 1) {
+							expect(timePassed).to.be.equal(900);
+							setImmediate(() => clock.tick(200));
+						}
+						else if (count === 2) {
+							expect(timePassed).to.be.equal(1800);
+							setImmediate(() => clock.tick(100));
+						}
+						else {
+							expect(true).to.be.false;
+						}
+						return (ans === correctAnswerInt);
+					};
+
+					askUser(question, {timeout: 1, onAnswer}).then((ans) => {
+						// Timeout!
+						answer = ans;
+						const now = Date.now();
+						const timePassed = now - startTime;
+						expect(timePassed).to.be.equal(1800);
+					});
+
+					clock.tick(900);
 				});
 			});
 
