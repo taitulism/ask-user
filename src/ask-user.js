@@ -23,6 +23,7 @@ function askUser (...args) {
 	const [question, opts, limit, isRequired, answerHandler] = resolveArgs(...args);
 	const readline = getReadlineInterface(opts);
 	const shouldConvert = opts.convert !== false;
+	const defaultAnswer = opts.default || EMPTY;
 
 	if (opts.hidden && readline.output.isTTY) {
 		// eslint-disable-next-line no-underscore-dangle
@@ -43,7 +44,7 @@ function askUser (...args) {
 
 		return opts.throwOnTimeout
 			? timeoutReject(new Error(`No Answer Timeout (${opts.timeout} seconds)`))
-			: timeoutResolve(opts.default || EMPTY);
+			: timeoutResolve(defaultAnswer);
 	}
 
 	function setTimer () {
@@ -62,8 +63,10 @@ function askUser (...args) {
 		if (isDone) return;
 
 		if (result) {
-			answer = result === true ? input : result;
-			return finish(answer);
+			if (result === true) {
+				result = input === EMPTY ? defaultAnswer : input;
+			}
+			return finish(result);
 		}
 
 		answer = null;
@@ -71,7 +74,7 @@ function askUser (...args) {
 
 		/* eslint-disable-next-line no-eq-null, eqeqeq */
 		if (result == null || limitExceeded) {
-			return finish(EMPTY);
+			return finish(defaultAnswer);
 		}
 
 		return ask();

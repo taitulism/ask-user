@@ -304,24 +304,38 @@ describe('askUser\n  -------', () => {
 			});
 
 			describe('default', function () {
-				let clock;
+				it('is the default answer value', async () => {
+					setAnswerTimeout(stdin, EOL, 10);
 
-				beforeEach(() => {
-					clock = sinon.useFakeTimers({
-						toFake: ['setTimeout', 'clearTimeout', 'Date'],
-						// shouldAdvanceTime: true, advanceTimeDelta: 100,
-					});
+					const answer = await askUser(question, {default: OK});
+
+					expect(answer).to.equal(OK);
 				});
 
-				afterEach(() => {
-					clock.restore();
+				it('is the default answer value in case of limit exceeded', async () => {
+					setAnswerTimeout(stdin, wrongAnswer1, 10);
+					setAnswerTimeout(stdin, wrongAnswer2, 20);
+					setAnswerTimeout(stdin, wrongAnswer3, 30);
+
+					const spy = sinon.spy();
+					const opts = {limit: 3, default: OK};
+
+					const answer = await askUser(question, opts, (answer) => {
+						spy(answer);
+						return (answer === correctAnswer);
+					});
+
+					expect(spy).to.be.calledThrice;
+					expect(answer).to.equal(OK);
 				});
 
 				it('is the default answer value in case of a timeout', function (done) {
 					let answer;
+					const clock = sinon.useFakeTimers();
 
 					setTimeout(() => {
 						expect(answer).to.equal(OK);
+						clock.restore();
 						done();
 					}, 1500);
 
