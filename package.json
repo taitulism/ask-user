@@ -1,7 +1,7 @@
 {
    "name": "ask-user",
    "description": "A simple CLI prompt to get user input.",
-   "version": "0.0.3",
+   "version": "1.1.3",
    "license": "MIT",
    "main": "./index.js",
    "author": "Taitu Lizenbaum <taitu.dev@gmail.com>",
