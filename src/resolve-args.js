@@ -13,15 +13,15 @@ module.exports = function resolveArgs (...args) {
 	const options = typesMap.get('object') || {};
 	const limit = typesMap.get('number') || options.limit || 0;
 	const isRequired = typesMap.get('boolean') || options.isRequired || false;
-	const answerHandler = typesMap.get('function') || options.onAnswer || (() => (true));
+	const validator = typesMap.get('function') || options.validate || (() => (true));
 	const rawQuestion = typesMap.get('string');
 
 	if (!rawQuestion) {
-		return [DEFAULT_QUESTION, options, limit, isRequired, answerHandler];
+		return [DEFAULT_QUESTION, options, limit, isRequired, validator];
 	}
 
 	const shouldAddTrailingSpace = options.trailingSpace !== false;
 	const question = shouldAddTrailingSpace ? normalizeTralingSpace(rawQuestion) : rawQuestion;
 
-	return [question, options, limit, isRequired, answerHandler];
+	return [question, options, limit, isRequired, validator];
 };

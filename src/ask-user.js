@@ -18,7 +18,7 @@ const NO = 'NO';
 const EMPTY = '';
 
 function askUser (...args) {
-	const [question, opts, limit, isRequired, answerHandler] = resolveArgs(...args);
+	const [question, opts, limit, isRequired, validator] = resolveArgs(...args);
 	const readline = getReadlineInterface(opts);
 	const shouldConvert = opts.convert !== false;
 	const defaultAnswer = opts.default || EMPTY;
@@ -30,7 +30,7 @@ function askUser (...args) {
 
 	let timeoutPromise, timeoutResolve, timeoutReject;
 	let finalResolve, finalReject;
-	let input, handlerResult;
+	let input, validatorResult;
 	let timeoutRef, abortTimeout;
 	let count = 0;
 	let isDone = false;
@@ -57,7 +57,7 @@ function askUser (...args) {
 		return finalResolve(finalAnswer);
 	}
 
-	function handleHandlerResult (result) {
+	function handleValidatorResult (result) {
 		if (isDone) return;
 
 		if (result) {
@@ -76,7 +76,7 @@ function askUser (...args) {
 		return ask();
 	}
 
-	function answerHandlerWrapper (rawInput) {
+	function answerHandler (rawInput) {
 		opts.timeout && abortTimeout();
 		if (isDone) return;
 		count++;
@@ -84,22 +84,22 @@ function askUser (...args) {
 		input = shouldConvert ? parseInput(rawInput) : rawInput;
 
 		try {
-			handlerResult = (isRequired && input === EMPTY) ? false : answerHandler(input, count);
+			validatorResult = (isRequired && input === EMPTY) ? false : validator(input, count);
 		}
 		catch (err) {
 			return finalReject(err);
 		}
 
-		if (handlerResult instanceof Promise) {
-			return handlerResult.then(handleHandlerResult, err => finalReject(err));
+		if (validatorResult instanceof Promise) {
+			return validatorResult.then(handleValidatorResult, err => finalReject(err));
 		}
 
-		return handleHandlerResult(handlerResult);
+		return handleValidatorResult(validatorResult);
 	}
 
 	function ask () {
 		opts.timeout && setTimer();
-		return asyncPrompt(question, readline).then(answerHandlerWrapper);
+		return asyncPrompt(question, readline).then(answerHandler);
 	}
 
 	/* ──────────────────────────────────────────────────────────── */

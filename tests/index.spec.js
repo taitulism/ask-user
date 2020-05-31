@@ -114,11 +114,11 @@ describe('askUser\n  -------', () => {
 
 		describe('Options - Object', () => {
 			describe('stdin', () => {
-				it.skip('uses a given stream as `stdin` (default is `process.stdin`)');
+				it.skip('TODO: uses a given stream as `stdin` (default is `process.stdin`)');
 			});
 
 			describe('stdout', () => {
-				it.skip('uses a given stream as `stdout` (default is `process.stdout`)');
+				it.skip('TODO: uses a given stream as `stdout` (default is `process.stdout`)');
 			});
 
 			describe('limit', () => {
@@ -141,19 +141,19 @@ describe('askUser\n  -------', () => {
 				});
 			});
 
-			describe('onAnswer', () => {
+			describe('validate', () => {
 				it('is alias for `answerHandler` function argument', async () => {
 					setAnswerTimeout(stdin, wrongAnswer1, 10);
 					setAnswerTimeout(stdin, correctAnswer, 20);
 
 					const spy = sinon.spy();
 
-					const onAnswer = (answer) => {
+					const validate = (answer) => {
 						spy(answer);
 						return (answer === correctAnswerInt);
 					};
 
-					const opts = {onAnswer};
+					const opts = {validate};
 					await askUser(question, opts);
 
 					const calls = spy.getCalls();
@@ -269,7 +269,7 @@ describe('askUser\n  -------', () => {
 
 					const startTime = Date.now();
 
-					const onAnswer = (ans, count) => {
+					const validate = (ans, count) => {
 						const now = Date.now();
 						const timePassed = now - startTime;
 
@@ -287,7 +287,7 @@ describe('askUser\n  -------', () => {
 						return (ans === correctAnswerInt);
 					};
 
-					askUser(question, {timeout: 1, onAnswer}).then((ans) => {
+					askUser(question, {timeout: 1, validate}).then((ans) => {
 						// Timeout!
 						answer = ans;
 						const now = Date.now();
@@ -375,7 +375,7 @@ describe('askUser\n  -------', () => {
 			});
 
 			describe('hidden', () => {
-				it.skip('TODO: mask the user answer (for passwords)', () => {
+				it.skip('TODO: masks the user answer (for passwords)', () => {
 					// Yes it is!
 					setTimeout(() => stdin.emit('data', 'Yes'), 10);
 					setTimeout(() => stdin.emit('data', ' iR'), 20); // R is a typo
@@ -463,24 +463,24 @@ describe('askUser\n  -------', () => {
 				expect(calls[3].args[0]).to.equal(correctAnswerInt);
 			});
 
-			it('overrides `opts.onAnswer` alias if both exists', async () => {
+			it('overrides `opts.validate` alias if both exists', async () => {
 				setAnswerTimeout(stdin, wrongAnswer1, 10);
 				setAnswerTimeout(stdin, correctAnswer, 20);
 
 				const spy = sinon.spy();
 
-				const optsOnAnswer = (answer) => {
+				const optsValidated = (answer) => {
 					spy(answer);
 					return (answer === correctAnswerInt);
 				};
 
-				const argOnAnswer = (answer, count) => {
+				const argValidated = (answer, count) => {
 					spy(count);
 					return (answer === correctAnswerInt);
 				};
 
-				const opts = {onAnswer: optsOnAnswer};
-				await askUser(question, opts, argOnAnswer);
+				const opts = {validate: optsValidated};
+				await askUser(question, opts, argValidated);
 
 				const calls = spy.getCalls();
 				expect(calls[0].args[0]).to.equal(1);

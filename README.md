@@ -15,7 +15,7 @@ $ npm install ask-user
 ### **Promise style**
 ```js
 askUser('Are you sure?').then((answer) => {
-    console.log(answer);
+    /*...*/
 });
 ```
 
@@ -23,33 +23,70 @@ askUser('Are you sure?').then((answer) => {
 ```js
 (async () => {
     const answer = await askUser('Are you sure?');
-    console.log(answer);
+    /*...*/
 })();
 ```
 
+
+# askUser (question, limit, isRequired, validate, options)
+> All arguments are optional.  
 > When called with no question it defaults to: `'Press "ENTER" to continue... '`
 
-# Arguments
-The `askUser` function accepts up to 5 argument and their order doesn't matter. It is possible because argument types are all unique:  
-* **question** - string  
-* **options** - object  
-* **onAnswer** - function  
-* **limit** - number  
-* **isRequired** - boolean  
-
+The `askUser` function accepts up to 5 argument and their order doesn't matter. It is possible because argument types are all unique. Anything goes:
 ```js
-// anything goes:
 askUser(question, opts)
 askUser(opts, limit, question, isRequired)
-askUser(onAnswer, question, limit)
+askUser(validate, question, limit)
 // etc.
 ``` 
+* **question** - string  
+* **limit** - number  
+* **isRequired** - boolean  
+* **validate** - function  
+* **options** - object (in parens are the default values) 
+    * `validate` - function (*Always true*)
+    * `limit` - number (*None*)
+    * `isRequired` - boolean (*`false`*)
+    * `hidden` - boolean (*`false`*)
+    * `convert` - boolean (*`true`*)
+    * `trailingSpace` - boolean (*`true`*)
+    * `timeout` - number (*None*)
+    * `default` - any (*`''` - Empty String*)
+    * `throwOnTimeout` - boolean (*`false`*)
+    * `stdin` - Readable Stream (*`process.stdin`*)
+    * `stdout` - Writable Stream (*`process.stdout`*)
 
-## **Question**
-Very self explanatory. The string that precedes the user input. For readability, the question is separated from the answer with a space. You can disable this behavior by setting the `trailingSpace` option to false.
 
 
-## **onAnswer**
+## **question**
+The string that precedes the user input. For readability, the question is separated from the answer with a space. You can disable this behavior by setting the `trailingSpace` option to `false`.
+
+
+
+## **limit**
+You can set a maximum number of tries (answer validation fails). The final answer will be set to an empty string (or a default value, if provided) when limit exceeded.
+```js
+const question = 'You have 3 tries to guess my favorite color:';
+const onGuess = (guessColor) => (guessColor === 'blue')
+const limit = 3
+const answer = await askUser(question, onGuess, limit)
+
+if (answer === '') {
+    // failed 3 times
+}
+```
+
+
+
+## **isRequired**
+If you require an answer for your question you can pass in a boolean `true`. The question will be re-asked if no answer provided.
+```js
+const answer = await askUser('Username:', true);
+```
+
+
+
+## **validate**
 A function that is used as the answer handler. It gets called when the user answers the question and hits "Enter". 
 
 > ### **This is NOT the final callback.**
@@ -75,7 +112,7 @@ const finalAnswer = await askUser(question, (answer, count) => {
 * Return `false` if you don't accept the answer. The user will be prompted again with the same question.  
 * Return `true` if you accept the user answer. Current answer will be returned as the final answer.  
 * Return any truthy value (other than a boolean `true`) to be used as the final answer.  
-* Return `null` or `undefined` to cancel question. Prompt will exit immediately and final answer will be `null`. Could be used as a kind of a cancel/exit.
+* Return `null` or `undefined` to cancel question. Prompt will exit immediately and final answer will be an empty string or a default value (see `options` below). Could be used as a kind of a cancel/exit.
 
 ```js
 // The question will be repetitively re-asked until the user types "I DO!"
@@ -91,7 +128,7 @@ The handler could also function as your answer parser/sanitizer/manipulator:
 const question = 'What is your name?';
 // user types: "  John " with spaces
 
-const onAnswer = (answer) => {
+const validate = (answer) => {
     const trimmed = answer.trim();
 
     return trimmed; // final answer: "John"
@@ -99,22 +136,22 @@ const onAnswer = (answer) => {
     return true;    // final answer: "  John "
 }
 
-const finalAnswer = await askUser(question, onAnswer)
+const finalAnswer = await askUser(question, validate)
 ```
 
 ### **Default Answer**
 Another use of returning a value could be a default value:
 ```js
 const question = 'Which branch to pull from?';
-const onAnswer = (branch) => {
+const validate = (branch) => {
     if (!branch) return 'master'; // when the answer is empty
 
     return branch.trim(); // return clean branch name
 }
 
-const finalAnswer = await askUser(question, onAnswer)
+const finalAnswer = await askUser(question, validate)
 ```
-But you don't need a handler for a simple default. You can simply use an `OR` operator:
+But you don't need a handler for a simple default. You can simply use a logical `OR` operator:
 ```js
 const question = 'Which branch to pull from?';
 const finalAnswer = await askUser(question) || 'master';
@@ -159,52 +196,31 @@ catch (err) {
 
 
 
-## **Required Answer**
-If you require an answer for your question you can pass in a boolean `true`. The question will be re-asked if no answer provided.
-```js
-const answer = await askUser('Username:', true);
-```
-
-
-
-## **Limit**
-You can set a maximum number of tries (answer validation fails). The final answer will be set to `null` when limit exceeded.
-```js
-const question = 'You have 3 tries to guess my favorite color:';
-const onAnswer = (guessColor) => (guessColor === 'blue')
-const limit = 3
-const answer = await askUser(question, onAnswer, limit)
-
-if (answer == null) {
-    // failed 3 times
-}
-```
-
-
-
-
 ## **Options**
-An object with the following possible properties:
-* `onAnswer`
-* `limit`
-* `isRequired`
-* `hidden`
-* `convert`
-* `trailingSpace`
-* `stdin`
-* `stdout`
+An object with the following possible properties (in parens are the default values):
+* `validate` - function (*Always true*)
+* `limit` - number (*None*)
+* `isRequired` - boolean (*`false`*)
+* `hidden` - boolean (*`false`*)
+* `convert` - boolean (*`true`*)
+* `trailingSpace` - boolean (*`true`*)
+* `timeout` - number (*`None`*)
+* `default` - any (*`''` - Empty String*)
+* `throwOnTimeout` - boolean (*`false`*)
+* `stdin` - Readable Stream (*`process.stdin`*)
+* `stdout` - Writable Stream (*`process.stdout`*)
 
-You can use `onAnswer`, `limit` and `isRequired`  via the `options` object too.
+`validate`, `limit` and `isRequired` are both arguments and options.
 > **NOTE: If you pass in an argument and its alias option, the argument will take precedence.**
 ```js
 const answer = await askUser(question, {
     limit: 3,
     isRequired: true,
-    onAnswer: (guessColor) => (guessColor === 'blue')
+    validate: (guessColor) => (guessColor === 'blue')
 });
 ```
 
-### **hidden**
+### **hidden** - default: `false`
 Set to `true` to mask user input with stars. Default is `false`.
 ```js
 const answer = await askUser('Enter Password:', {hidden: true});
@@ -214,7 +230,7 @@ const answer = await askUser('Enter Password:', {hidden: true});
 // answer === 1234
 ```
 
-### **convert**
+### **convert** - default: `true`
 All inputs are strings by default. `askUser` automatically converts answers into numbers and booleans when possible.
 
 * `'42'` (string) - becomes `42` (number).  
@@ -233,13 +249,51 @@ const answer2 = await askUser(question, {convert: false});
 // answer2 === 'Yes'
 ```
 
-### **trailingSpace**
+### **trailingSpace** - default: `true`
 By default, a single space is added after the question if the last character is not a space or a newline. You can disable this behavior by setting the `trailingSpace` option to false.
 ```js
 await askUser(question, {trailingSpace: false});
 ```
 
-### **stdin & stdout**
+### **default**  - default: `''` (empty string)
+A question will resolve with the default value in case of:  
+* no user input
+* validator returns `null`
+* a timeout
+* when the tries limit exceeded
+
+When no default value provided the returned value is an empty string. You can set a default value using the `default` option.  
+```js
+const  = 'Which branch to pull from?';
+const answer = await askUser(question , {default: 'master'});
+
+// user doesn't type anything and hits "Enter"
+
+console.log(answer); // 'master'
+```
+
+If you prefer, you can simply use a logical `OR` operator:
+```js
+const finalAnswer = await askUser(question) || 'master';
+```
+
+
+### **timeout** - default: `false`
+You can set a time limit for an answer. Pass the number of **seconds** to the `timeout` option:
+```js
+const question = 'You have 3 seconds to answer or else...';
+const answer = await askUser(question , {timeout: 3});
+
+// no answer
+console.log(answer); // empty string
+
+```
+
+### **throwOnTimeout** - default: `false`
+Normally, a timeout will be resolved with an empty string or a default value. Set `throwOnTimeout` option to `true` if you want the promise to reject on timeout.
+
+
+### **stdin & stdout** - default: `process.stdio`
 By default `askUser` sends the question to the `process.stdout` and waits for the answer from `process.stdin`. You can pass other streams using the options object.
 ```js
 const opts = {
